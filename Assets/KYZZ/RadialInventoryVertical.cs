@@ -12,9 +12,9 @@ public class RadialInventoryVertical : MonoBehaviour
     [SerializeField] private Vector2 screenPosition = new Vector2(150, 400);
 
     [Header("Visual")]
-    [SerializeField] private Color normalColor = new Color(0.3f, 0.3f, 0.3f, 0.8f);
-    [SerializeField] private Color hoverColor = new Color(0.8f, 0.8f, 0.2f, 0.9f);
-    [SerializeField] private Color selectedColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+    [SerializeField] private Color normalColor = new Color(0.2f, 0.2f, 0.2f, 0.9f);
+    [SerializeField] private Color selectedColor = new Color(0.3f, 0.9f, 0.3f, 1f);
+    [SerializeField] private Texture2D slotBackground;
 
     [Header("Player Hand Reference")]
     public Transform handPoint;
@@ -23,7 +23,6 @@ public class RadialInventoryVertical : MonoBehaviour
     private List<InventorySlot> slots = new List<InventorySlot>();
     private int selectedIndex = -1;
     private float openProgress;
-    private Camera cam;
 
     private class InventorySlot
     {
@@ -32,31 +31,17 @@ public class RadialInventoryVertical : MonoBehaviour
         public string itemName;
         public GameObject itemObject;
         public Texture2D iconTexture;
-        public bool isEmpty;
-
-        public InventorySlot(string name = "", GameObject obj = null, Texture2D icon = null)
-        {
-            itemName = name;
-            itemObject = obj;
-            iconTexture = icon;
-            isEmpty = string.IsNullOrEmpty(name);
-            currentSize = 0f;
-        }
+        public bool isEmpty = true;
     }
 
     void Start()
     {
-        cam = Camera.main;
-        InitializeSlots();
-    }
-
-    void InitializeSlots()
-    {
         slots.Clear();
         for (int i = 0; i < slotCount; i++)
-        {
             slots.Add(new InventorySlot());
-        }
+
+        if (slotBackground == null)
+            slotBackground = Texture2D.grayTexture;
     }
 
     void Update()
@@ -76,6 +61,8 @@ public class RadialInventoryVertical : MonoBehaviour
 
             if (selectedIndex >= 0)
                 EquipSelectedItem();
+            else
+                ClearHandItem();
         }
 
         openProgress = Mathf.Lerp(openProgress, isOpen ? 1f : 0f, Time.unscaledDeltaTime * 8f);
@@ -91,7 +78,7 @@ public class RadialInventoryVertical : MonoBehaviour
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            float yOffset = i * spacing * openProgress;
+            float yOffset = i * spacing * openProgress; // ✅ เอา +1 ออก ให้เริ่มจาก 0
             slots[i].position = screenPosition + new Vector2(0, -yOffset);
         }
     }
@@ -110,7 +97,10 @@ public class RadialInventoryVertical : MonoBehaviour
             if (selectedIndex < 0) selectedIndex = slots.Count - 1;
             if (selectedIndex >= slots.Count) selectedIndex = 0;
 
-            Debug.Log($"Selected slot: {selectedIndex}");
+            if (slots[selectedIndex].isEmpty)
+                ClearHandItem();
+            else
+                EquipSelectedItem();
         }
 
         for (int i = 0; i < slots.Count; i++)
@@ -120,17 +110,40 @@ public class RadialInventoryVertical : MonoBehaviour
         }
     }
 
+    void ClearHandItem()
+    {
+        foreach (var slot in slots)
+        {
+            if (slot.itemObject != null)
+            {
+                slot.itemObject.transform.SetParent(null);
+                slot.itemObject.SetActive(false);
+            }
+        }
+    }
+
     void EquipSelectedItem()
     {
-        if (selectedIndex < 0 || selectedIndex >= slots.Count) return;
-        var slot = slots[selectedIndex];
-        if (slot.isEmpty || slot.itemObject == null) return;
+        if (selectedIndex < 0 || selectedIndex >= slots.Count)
+        {
+            ClearHandItem();
+            return;
+        }
 
+        var slot = slots[selectedIndex];
+
+        if (slot.isEmpty || slot.itemObject == null)
+        {
+            ClearHandItem();
+            return;
+        }
+
+        ClearHandItem();
+
+        slot.itemObject.SetActive(true);
         slot.itemObject.transform.SetParent(handPoint);
         slot.itemObject.transform.localPosition = Vector3.zero;
         slot.itemObject.transform.localRotation = Quaternion.identity;
-
-        Debug.Log($"Equipped item: {slot.itemName}");
     }
 
     void OnGUI()
@@ -139,7 +152,7 @@ public class RadialInventoryVertical : MonoBehaviour
 
         for (int i = 0; i < slots.Count; i++)
         {
-            InventorySlot slot = slots[i];
+            var slot = slots[i];
             float size = slot.currentSize * openProgress;
             Rect rect = new Rect(
                 slot.position.x - size / 2,
@@ -148,14 +161,9 @@ public class RadialInventoryVertical : MonoBehaviour
                 size
             );
 
-            Color slotColor = normalColor;
-            if (i == selectedIndex) slotColor = selectedColor;
-            slotColor.a *= openProgress;
+            GUI.color = (i == selectedIndex) ? selectedColor : normalColor;
+            GUI.DrawTexture(rect, slotBackground);
 
-            GUI.color = slotColor;
-            GUI.DrawTexture(rect, Texture2D.whiteTexture);
-
-            // ✅ ถ้ามี icon ให้แสดงรูปของไอเท็ม
             if (!slot.isEmpty && slot.iconTexture != null)
             {
                 Rect iconRect = new Rect(rect.x + 5, rect.y + 5, size - 10, size - 10);
@@ -167,26 +175,33 @@ public class RadialInventoryVertical : MonoBehaviour
         GUI.color = Color.white;
     }
 
-    // ✅ เรียกจาก InteractItem ตอนเก็บของ
+    // ✅ เวอร์ชันสุดนิ่ง: ใส่ของลงช่องแรก (1) แน่ๆ และถืออัตโนมัติถ้ายังไม่มีของในมือ
     public void AddItem(GameObject item, string name, Texture2D icon = null)
     {
-        foreach (var slot in slots)
+        for (int i = 0; i < slots.Count; i++)
         {
-            if (slot.isEmpty)
+            if (slots[i].isEmpty)
             {
-                slot.itemObject = item;
-                slot.itemName = name;
-                slot.iconTexture = icon;
-                slot.isEmpty = false;
+                slots[i].itemObject = item;
+                slots[i].itemName = name;
+                slots[i].iconTexture = icon;
+                slots[i].isEmpty = false;
 
-                // ✅ เดิมคือจะถือของทันที
-                // selectedIndex = slots.IndexOf(slot);
-                // EquipSelectedItem();
+                item.SetActive(false);
+                item.transform.SetParent(null);
 
-                Debug.Log($"Added item: {name}");
+                // ✅ ถ้ายังไม่เลือกอะไรเลย → auto select ช่องนี้
+                if (selectedIndex == -1)
+                {
+                    selectedIndex = i;
+                    EquipSelectedItem();
+                }
+
+                Debug.Log($"🟢 Added item '{name}' to slot #{i + 1}");
                 return;
             }
         }
-    }
 
+        Debug.Log("⚠️ Inventory full!");
+    }
 }
