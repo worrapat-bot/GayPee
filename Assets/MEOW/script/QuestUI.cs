@@ -1,124 +1,234 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
-// This handles the visual display of quests on screen
 public class QuestUI : MonoBehaviour
 {
-    public GameObject questPanel;
-    public TextMeshProUGUI questTitleText;
-    public TextMeshProUGUI questDescriptionText;
-    public TextMeshProUGUI questProgressText;
-    public Button acceptButton;
+    [Header("UI Panels")]
+    [SerializeField] private GameObject questLogPanel;
+    [SerializeField] private GameObject questTrackerPanel;
 
-    public GameObject questListPanel;
-    public Transform questListContent;
-    public GameObject questItemPrefab;
+    [Header("Quest Log")]
+    [SerializeField] private Transform activeQuestsContent;
+    [SerializeField] private Transform availableQuestsContent;
+    [SerializeField] private Transform completedQuestsContent;
+    [SerializeField] private GameObject questItemPrefab;
 
-    private Quest currentDisplayedQuest;
+    [Header("Quest Details")]
+    [SerializeField] private GameObject questDetailsPanel;
+    [SerializeField] private TextMeshProUGUI detailsTitle;
+    [SerializeField] private TextMeshProUGUI detailsDescription;
+    [SerializeField] private Transform objectivesContainer;
+    [SerializeField] private GameObject objectivePrefab;
+    [SerializeField] private TextMeshProUGUI rewardsText;
+    [SerializeField] private Button startQuestButton;
+    [SerializeField] private Button trackQuestButton;
 
-    void Start()
+    [Header("Quest Tracker")]
+    [SerializeField] private Transform trackedQuestsContainer;
+    [SerializeField] private GameObject trackedQuestPrefab;
+
+    private Quest selectedQuest;
+    private Dictionary<string, GameObject> trackedQuestObjects = new Dictionary<string, GameObject>();
+
+    private void Start()
     {
-        // Hide panels at start
-        questPanel.SetActive(false);
-        questListPanel.SetActive(false);
+        questLogPanel.SetActive(false);
+        questDetailsPanel.SetActive(false);
 
-        acceptButton.onClick.AddListener(AcceptCurrentQuest);
+        // Subscribe to quest events
+        QuestManager.Instance.OnQuestStarted.AddListener(OnQuestStarted);
+        QuestManager.Instance.OnQuestCompleted.AddListener(OnQuestCompleted);
+        QuestManager.Instance.OnQuestUpdated.AddListener(OnQuestUpdated);
 
-        // Listen to quest events
-        QuestManager.instance.onQuestAccepted.AddListener(OnQuestAccepted);
-        QuestManager.instance.onQuestCompleted.AddListener(OnQuestCompleted);
+        RefreshQuestLog();
     }
 
-    void Update()
+    public void ToggleQuestLog()
     {
-        // Press Q to toggle quest list
-        if (Input.GetKeyDown(KeyCode.Q))
+        questLogPanel.SetActive(!questLogPanel.activeSelf);
+        if (questLogPanel.activeSelf)
         {
-            ToggleQuestList();
+            RefreshQuestLog();
         }
-
-        UpdateActiveQuestsDisplay();
     }
 
-    public void ShowQuestDetails(Quest quest)
+    private void RefreshQuestLog()
     {
-        currentDisplayedQuest = quest;
-        questPanel.SetActive(true);
+        ClearQuestList(activeQuestsContent);
+        ClearQuestList(availableQuestsContent);
+        ClearQuestList(completedQuestsContent);
 
-        questTitleText.text = quest.questName;
-        questDescriptionText.text = quest.description +
-            $"\n\nRewards:\nXP: {quest.experienceReward}\nGold: {quest.goldReward}";
-
-        if (quest.isActive)
+        // Populate active quests
+        foreach (var quest in QuestManager.Instance.GetActiveQuests())
         {
-            acceptButton.gameObject.SetActive(false);
-            questProgressText.text = $"Progress: {quest.goal.currentAmount}/{quest.goal.requiredAmount}";
+            CreateQuestListItem(quest, activeQuestsContent, false);
         }
-        else if (quest.isCompleted)
+
+        // Populate available quests
+        foreach (var quest in QuestManager.Instance.GetAvailableQuests())
         {
-            acceptButton.gameObject.SetActive(false);
-            questProgressText.text = "Completed!";
+            CreateQuestListItem(quest, availableQuestsContent, false);
+        }
+
+        // Populate completed quests
+        foreach (var quest in QuestManager.Instance.GetCompletedQuests())
+        {
+            CreateQuestListItem(quest, completedQuestsContent, true);
+        }
+    }
+
+    private void ClearQuestList(Transform container)
+    {
+        foreach (Transform child in container)
+        {
+            Destroy(child.gameObject);
+        }
+    }
+
+    private void CreateQuestListItem(Quest quest, Transform parent, bool isCompleted)
+    {
+        GameObject item = Instantiate(questItemPrefab, parent);
+
+        TextMeshProUGUI titleText = item.transform.Find("Title").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI progressText = item.transform.Find("Progress").GetComponent<TextMeshProUGUI>();
+
+        titleText.text = quest.title;
+
+        if (isCompleted)
+        {
+            progressText.text = "Completed";
+            progressText.color = Color.green;
         }
         else
         {
-            acceptButton.gameObject.SetActive(true);
-            questProgressText.text = "";
+            progressText.text = $"{Mathf.RoundToInt(quest.GetProgress() * 100)}%";
         }
+
+        Button button = item.GetComponent<Button>();
+        button.onClick.AddListener(() => ShowQuestDetails(quest));
     }
 
-    void AcceptCurrentQuest()
+    private void ShowQuestDetails(Quest quest)
     {
-        if (currentDisplayedQuest != null)
-        {
-            QuestManager.instance.AcceptQuest(currentDisplayedQuest);
-            questPanel.SetActive(false);
-        }
-    }
+        selectedQuest = quest;
+        questDetailsPanel.SetActive(true);
 
-    void ToggleQuestList()
-    {
-        questListPanel.SetActive(!questListPanel.activeSelf);
+        detailsTitle.text = quest.title;
+        detailsDescription.text = quest.description;
+        rewardsText.text = $"Rewards: {quest.experienceReward} XP, {quest.goldReward} Gold";
 
-        if (questListPanel.activeSelf)
-        {
-            RefreshQuestList();
-        }
-    }
-
-    void RefreshQuestList()
-    {
-        // Clear existing items
-        foreach (Transform child in questListContent)
+        // Clear and populate objectives
+        foreach (Transform child in objectivesContainer)
         {
             Destroy(child.gameObject);
         }
 
-        // Add all available quests
-        foreach (Quest quest in QuestManager.instance.allQuests)
+        foreach (var objective in quest.objectives)
         {
-            GameObject item = Instantiate(questItemPrefab, questListContent);
-            TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
-            text.text = quest.questName + (quest.isCompleted ? " [COMPLETED]" : quest.isActive ? " [ACTIVE]" : "");
+            GameObject objItem = Instantiate(objectivePrefab, objectivesContainer);
+            TextMeshProUGUI objText = objItem.GetComponent<TextMeshProUGUI>();
 
-            Button btn = item.GetComponent<Button>();
-            Quest q = quest; // Capture for lambda
-            btn.onClick.AddListener(() => ShowQuestDetails(q));
+            string checkmark = objective.isCompleted ? "✓" : "○";
+            objText.text = $"{checkmark} {objective.description} ({objective.currentAmount}/{objective.requiredAmount})";
+            objText.color = objective.isCompleted ? Color.green : Color.white;
+        }
+
+        // Configure buttons
+        if (quest.status == QuestStatus.NotStarted)
+        {
+            startQuestButton.gameObject.SetActive(true);
+            startQuestButton.onClick.RemoveAllListeners();
+            startQuestButton.onClick.AddListener(() => StartQuest(quest.id));
+            trackQuestButton.gameObject.SetActive(false);
+        }
+        else if (quest.status == QuestStatus.InProgress)
+        {
+            startQuestButton.gameObject.SetActive(false);
+            trackQuestButton.gameObject.SetActive(true);
+            trackQuestButton.GetComponentInChildren<TextMeshProUGUI>().text = quest.isTracked ? "Untrack" : "Track";
+            trackQuestButton.onClick.RemoveAllListeners();
+            trackQuestButton.onClick.AddListener(() => ToggleTracking(quest.id));
+        }
+        else
+        {
+            startQuestButton.gameObject.SetActive(false);
+            trackQuestButton.gameObject.SetActive(false);
         }
     }
 
-    void UpdateActiveQuestsDisplay()
+    private void StartQuest(string questId)
     {
-        // You can add a small UI element that always shows active quests
+        QuestManager.Instance.StartQuest(questId);
+        questDetailsPanel.SetActive(false);
+        RefreshQuestLog();
     }
 
-    void OnQuestAccepted(Quest quest)
+    private void ToggleTracking(string questId)
     {
-        Debug.Log("UI: Quest accepted - " + quest.questName);
+        QuestManager.Instance.ToggleQuestTracking(questId);
+        ShowQuestDetails(selectedQuest); // Refresh details
     }
 
-    void OnQuestCompleted(Quest quest)
+    private void OnQuestStarted(Quest quest)
     {
-        Debug.Log("UI: Quest completed - " + quest.questName);
+        UpdateQuestTracker();
+    }
+
+    private void OnQuestCompleted(Quest quest)
+    {
+        UpdateQuestTracker();
+        RefreshQuestLog();
+    }
+
+    private void OnQuestUpdated(Quest quest)
+    {
+        UpdateQuestTracker();
+        if (selectedQuest != null && selectedQuest.id == quest.id)
+        {
+            ShowQuestDetails(quest);
+        }
+    }
+
+    private void UpdateQuestTracker()
+    {
+        // Clear tracker
+        foreach (Transform child in trackedQuestsContainer)
+        {
+            Destroy(child.gameObject);
+        }
+        trackedQuestObjects.Clear();
+
+        // Add tracked quests
+        foreach (var quest in QuestManager.Instance.GetActiveQuests())
+        {
+            if (quest.isTracked)
+            {
+                GameObject trackerItem = Instantiate(trackedQuestPrefab, trackedQuestsContainer);
+
+                TextMeshProUGUI titleText = trackerItem.transform.Find("Title").GetComponent<TextMeshProUGUI>();
+                Transform objectivesList = trackerItem.transform.Find("Objectives");
+
+                titleText.text = quest.title;
+
+                foreach (var objective in quest.objectives)
+                {
+                    GameObject objText = new GameObject("Objective");
+                    objText.transform.SetParent(objectivesList);
+                    TextMeshProUGUI tmp = objText.AddComponent<TextMeshProUGUI>();
+                    tmp.text = $"• {objective.description} ({objective.currentAmount}/{objective.requiredAmount})";
+                    tmp.fontSize = 14;
+                    tmp.color = objective.isCompleted ? Color.green : Color.white;
+                }
+
+                trackedQuestObjects[quest.id] = trackerItem;
+            }
+        }
+    }
+
+    public void CloseDetailsPanel()
+    {
+        questDetailsPanel.SetActive(false);
     }
 }
