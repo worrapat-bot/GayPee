@@ -28,27 +28,28 @@ public class QuestManager : MonoBehaviour
 
     void InitializeQuests()
     {
-        // Create some example quests
-        QuestGoal goal1 = new QuestGoal
+        void InitializeQuests()
         {
-            goalType = GoalType.Kill,
-            targetId = "Enemy",
-            requiredAmount = 5,
-            currentAmount = 0
-        };
-        Quest quest1 = new Quest("quest_1", "Defeat 5 Enemies", "Help clear the area of enemies", 100, 50, goal1);
+            // Example: Create a collection quest
+            QuestGoal goal = new QuestGoal
+            {
+                goalType = GoalType.Collect,
+                targetId = "Gold",  // What to collect
+                requiredAmount = 20, // How many needed
+                currentAmount = 0
+            };
 
-        QuestGoal goal2 = new QuestGoal
-        {
-            goalType = GoalType.Collect,
-            targetId = "Coin",
-            requiredAmount = 10,
-            currentAmount = 0
-        };
-        Quest quest2 = new Quest("quest_2", "Collect 10 Coins", "Gather coins scattered around", 50, 25, goal2);
+            Quest myQuest = new Quest(
+                "quest_gold",           // Unique ID
+                "Collect Gold",         // Name
+                "Find 20 gold pieces",  // Description
+                150,                    // XP reward
+                100,                    // Gold reward
+                goal
+            );
 
-        allQuests.Add(quest1);
-        allQuests.Add(quest2);
+            allQuests.Add(myQuest);
+        }
     }
 
     public void AcceptQuest(Quest quest)
