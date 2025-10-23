@@ -79,7 +79,7 @@ public class RadialInventoryVertical : MonoBehaviour
         for (int i = 0; i < slots.Count; i++)
         {
             float yOffset = i * spacing * openProgress; // ✅ เอา +1 ออก ให้เริ่มจาก 0
-            slots[i].position = screenPosition + new Vector2(0, -yOffset);
+            slots[i].position = screenPosition + new Vector2(0, yOffset);
         }
     }
 

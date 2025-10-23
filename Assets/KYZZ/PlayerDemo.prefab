@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 8814749771794189504}
   m_Layer: 0
   m_Name: PlayerDemo
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -36,6 +36,7 @@ Transform:
   m_Children:
   - {fileID: 7413428623539405726}
   - {fileID: 2154012178871398917}
+  - {fileID: 3553159727551889275}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3753080662782716441
@@ -165,6 +166,60 @@ MonoBehaviour:
   mouseSensitivity: 2
   maxLookAngle: 80
   bodyRotationSpeed: 5
+--- !u!1 &999315704095582063
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3553159727551889275}
+  - component: {fileID: 2384462536043013657}
+  m_Layer: 0
+  m_Name: RadiaInventory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3553159727551889275
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 999315704095582063}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5031466755094222792}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2384462536043013657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 999315704095582063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78bc1554feb4fc944b27c50a74380c1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  slotCount: 3
+  spacing: 100
+  normalSize: 60
+  hoverSize: 80
+  animSpeed: 10
+  screenPosition: {x: 150, y: 400}
+  normalColor: {r: 0.3, g: 0.3, b: 0.3, a: 0.8}
+  selectedColor: {r: 0.2, g: 0.8, b: 0.2, a: 1}
+  slotBackground: {fileID: 0}
+  handPoint: {fileID: 2154012178871398917}
 --- !u!1 &2597262247685087484
 GameObject:
   m_ObjectHideFlags: 0
@@ -225,7 +280,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.3197863, y: 0, z: 0, w: 0.94748974}
   m_LocalPosition: {x: -0.10099983, y: 0.92999995, z: 0.63}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.39023}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5031466755094222792}
@@ -262,8 +317,8 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
+  far clip plane: 100
+  field of view: 40.5
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
