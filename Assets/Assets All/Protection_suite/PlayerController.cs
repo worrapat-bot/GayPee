@@ -113,10 +113,10 @@ public class PlayerController : MonoBehaviour
         if (isBlocking) speed *= 0.3f;
 
         // Apply movement
-        Vector3 vel = rb.velocity;
+        Vector3 vel = rb.linearVelocity;
         vel.x = dir.x * speed;
         vel.z = dir.z * speed;
-        rb.velocity = vel;
+        rb.linearVelocity = vel;
     }
 
     void HandleCrouch()
@@ -151,7 +151,7 @@ public class PlayerController : MonoBehaviour
 
     void UpdateStamina()
     {
-        bool running = Input.GetKey(KeyCode.LeftShift) && rb.velocity.magnitude > 1f && !isCrouching;
+        bool running = Input.GetKey(KeyCode.LeftShift) && rb.linearVelocity.magnitude > 1f && !isCrouching;
 
         if (running)
             stamina = Mathf.Max(0, stamina - staminaDrain * Time.deltaTime);
@@ -164,7 +164,7 @@ public class PlayerController : MonoBehaviour
         if (cam == null) return;
 
         Vector3 targetPos = isCrouching ? camStartPos * 0.5f : camStartPos;
-        float speed = rb.velocity.magnitude;
+        float speed = rb.linearVelocity.magnitude;
 
         if (speed > 0.1f)
         {
