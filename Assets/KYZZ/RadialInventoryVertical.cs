@@ -19,6 +19,9 @@ public class RadialInventoryVertical : MonoBehaviour
     [Header("Player Hand Reference")]
     public Transform handPoint;
 
+    [Header("🆕 Drop Settings")]
+    [SerializeField] private float dropDistance = 2f; // ระยะที่วางของ (เมตร)
+
     private bool isOpen;
     private List<InventorySlot> slots = new List<InventorySlot>();
     private int selectedIndex = -1;
@@ -65,6 +68,12 @@ public class RadialInventoryVertical : MonoBehaviour
                 ClearHandItem();
         }
 
+        // ✅ กด E = วางของ (ถ้ามีของในมือ)
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            DropCurrentItem();
+        }
+
         openProgress = Mathf.Lerp(openProgress, isOpen ? 1f : 0f, Time.unscaledDeltaTime * 8f);
 
         if (isOpen && openProgress > 0.1f)
@@ -78,7 +87,7 @@ public class RadialInventoryVertical : MonoBehaviour
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            float yOffset = i * spacing * openProgress; // ✅ เอา +1 ออก ให้เริ่มจาก 0
+            float yOffset = i * spacing * openProgress;
             slots[i].position = screenPosition + new Vector2(0, yOffset);
         }
     }
@@ -146,6 +155,165 @@ public class RadialInventoryVertical : MonoBehaviour
         slot.itemObject.transform.localRotation = Quaternion.identity;
     }
 
+    // ✅ ฟังก์ชันวางของ - เรียกจาก PlayerController ด้วย
+    public void DropCurrentItem()
+    {
+        if (selectedIndex < 0 || selectedIndex >= slots.Count) return;
+
+        var slot = slots[selectedIndex];
+        if (slot.isEmpty || slot.itemObject == null) return;
+
+        // วางของหน้าผู้เล่น (สูงขึ้นหน่อย)
+        Camera cam = Camera.main;
+        Vector3 dropPos = cam.transform.position + cam.transform.forward * dropDistance;
+        dropPos.y += 0.5f; // ⭐ ยกขึ้นสูงกว่าพื้นนิดหน่อย
+
+        slot.itemObject.SetActive(true);
+        slot.itemObject.transform.SetParent(null);
+        slot.itemObject.transform.position = dropPos;
+        slot.itemObject.transform.rotation = Quaternion.identity;
+
+        // ✅ เช็คและเพิ่ม Collider ถ้ายังไม่มี
+        EnsurePhysicsComponents(slot.itemObject);
+
+        // เพิ่ม Rigidbody ถ้ายังไม่มี
+        Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = slot.itemObject.AddComponent<Rigidbody>();
+        }
+        rb.isKinematic = false;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // ⭐ เปลี่ยนเป็น ContinuousDynamic
+        rb.mass = 1f; // ⭐ ตั้งค่า mass ให้ชัดเจน
+        rb.drag = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย ไม่ให้ตกเร็วเกินไป
+
+        Debug.Log($"🟡 Dropped '{slot.itemName}' from inventory");
+
+        // ล้างช่องนี้
+        slot.isEmpty = true;
+        slot.itemObject = null;
+        slot.itemName = "";
+        slot.iconTexture = null;
+
+        // หาช่องถัดไปที่มีของ หรือ clear มือ
+        FindNextItem();
+    }
+
+    // ✅ ฟังก์ชันปาของ - เรียกจาก PlayerController
+    public void ThrowCurrentItem(float force)
+    {
+        if (selectedIndex < 0 || selectedIndex >= slots.Count) return;
+
+        var slot = slots[selectedIndex];
+        if (slot.isEmpty || slot.itemObject == null) return;
+
+        // ปาของไปทางที่กล้องมอง
+        Camera cam = Camera.main;
+        Vector3 throwPos = cam.transform.position + cam.transform.forward * 0.5f;
+
+        slot.itemObject.SetActive(true);
+        slot.itemObject.transform.SetParent(null);
+        slot.itemObject.transform.position = throwPos;
+        slot.itemObject.transform.rotation = Quaternion.identity;
+
+        // ✅ เช็คและเพิ่ม Collider ถ้ายังไม่มี
+        EnsurePhysicsComponents(slot.itemObject);
+
+        // เพิ่ม Rigidbody และปา
+        Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = slot.itemObject.AddComponent<Rigidbody>();
+        }
+        rb.isKinematic = false;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // ⭐ เปลี่ยนเป็น ContinuousDynamic
+        rb.mass = 1f; // ⭐ ตั้งค่า mass ให้ชัดเจน
+        rb.drag = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย
+        rb.AddForce(cam.transform.forward * force, ForceMode.Impulse);
+
+        Debug.Log($"🚀 Threw '{slot.itemName}' with force {force}");
+
+        // ล้างช่องนี้
+        slot.isEmpty = true;
+        slot.itemObject = null;
+        slot.itemName = "";
+        slot.iconTexture = null;
+
+        // หาช่องถัดไปที่มีของ
+        FindNextItem();
+    }
+
+    // ✅ หาของชิ้นถัดไปหลังวาง/ปา
+    void FindNextItem()
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (!slots[i].isEmpty)
+            {
+                selectedIndex = i;
+                EquipSelectedItem();
+                return;
+            }
+        }
+
+        // ไม่มีของเหลือเลย
+        selectedIndex = -1;
+        ClearHandItem();
+    }
+
+    // ✅ เช็คว่ามีของในมือไหม
+    public bool HasItemInHand()
+    {
+        if (selectedIndex < 0 || selectedIndex >= slots.Count) return false;
+        return !slots[selectedIndex].isEmpty && slots[selectedIndex].itemObject != null;
+    }
+
+    // ✅ เช็คและเพิ่ม Physics Components อัตโนมัติ
+    void EnsurePhysicsComponents(GameObject obj)
+    {
+        // เช็ค Collider - ถ้าไม่มีให้เพิ่มแบบอัตโนมัติ
+        Collider col = obj.GetComponent<Collider>();
+        if (col == null)
+        {
+            // ลองหา MeshFilter เพื่อใช้ขนาดที่เหมาะสม
+            MeshFilter meshFilter = obj.GetComponent<MeshFilter>();
+            if (meshFilter != null && meshFilter.sharedMesh != null)
+            {
+                // ใช้ BoxCollider แทน MeshCollider เพราะเสถียรกว่า
+                BoxCollider boxCol = obj.AddComponent<BoxCollider>();
+
+                // คำนวณขนาด Collider จาก Mesh bounds
+                Bounds bounds = meshFilter.sharedMesh.bounds;
+                boxCol.center = bounds.center;
+                boxCol.size = bounds.size;
+
+                Debug.Log($"✅ Added BoxCollider (size: {bounds.size}) to {obj.name}");
+            }
+            else
+            {
+                // ไม่มี Mesh ให้ใช้ BoxCollider ขนาดมาตรฐาน
+                BoxCollider boxCol = obj.AddComponent<BoxCollider>();
+                boxCol.size = Vector3.one * 0.5f; // ขนาดเล็กกว่าเดิม
+                Debug.Log($"✅ Added BoxCollider (default) to {obj.name}");
+            }
+        }
+        else
+        {
+            Debug.Log($"✅ {obj.name} already has {col.GetType().Name}");
+        }
+
+        // ⭐ ปิด isTrigger ทุก Collider เพื่อให้ชนได้
+        Collider[] allColliders = obj.GetComponents<Collider>();
+        foreach (Collider c in allColliders)
+        {
+            if (c.isTrigger)
+            {
+                c.isTrigger = false;
+                Debug.Log($"🔓 Disabled isTrigger on {c.GetType().Name} of {obj.name}");
+            }
+        }
+    }
+
     void OnGUI()
     {
         if (openProgress < 0.01f) return;
@@ -175,7 +343,7 @@ public class RadialInventoryVertical : MonoBehaviour
         GUI.color = Color.white;
     }
 
-    // ✅ เวอร์ชันสุดนิ่ง: ใส่ของลงช่องแรก (1) แน่ๆ และถืออัตโนมัติถ้ายังไม่มีของในมือ
+    // เพิ่มของเข้า Inventory
     public void AddItem(GameObject item, string name, Texture2D icon = null)
     {
         for (int i = 0; i < slots.Count; i++)
@@ -190,7 +358,7 @@ public class RadialInventoryVertical : MonoBehaviour
                 item.SetActive(false);
                 item.transform.SetParent(null);
 
-                // ✅ ถ้ายังไม่เลือกอะไรเลย → auto select ช่องนี้
+                // ถ้ายังไม่เลือกอะไรเลย → auto select
                 if (selectedIndex == -1)
                 {
                     selectedIndex = i;
