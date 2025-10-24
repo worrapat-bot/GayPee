@@ -1,46 +1,39 @@
 ﻿using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
 
 public class NPCSystem : MonoBehaviour
 {
     public GameObject d_template;
     public GameObject canva;
-    public Button continueButton;
     bool player_detection = false;
     private int currentDialogueIndex = 0;
-    private string[] dialogs = { "IM GAY" };
+    private string[] dialogues = { "HI", "IM GAY" };
+    private bool dialogueActive = false;
 
     void Start()
     {
-        // Debug checks
         if (d_template == null) Debug.LogError("NPC: d_template is not assigned!");
         if (canva == null) Debug.LogError("NPC: canva is not assigned!");
 
-        if (continueButton != null)
-        {
-            continueButton.onClick.AddListener(OnContinueButtonClicked);
-            continueButton.gameObject.SetActive(false);
-        }
-        else
-        {
-            Debug.LogWarning("NPC: continueButton is not assigned. You need to assign a UI Button!");
-        }
-
-        // Make sure canvas starts disabled
         if (canva != null)
         {
             canva.SetActive(false);
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (player_detection && Input.GetKeyDown(KeyCode.F) && !PlayerController1.dialog)
         {
             Debug.Log("NPC: F key pressed! Starting dialogue...");
             StartDialogue();
+        }
+
+        // Click to advance dialogue
+        if (dialogueActive && Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("NPC: Mouse clicked! Advancing dialogue...");
+            AdvanceDialogue();
         }
     }
 
@@ -56,38 +49,21 @@ public class NPCSystem : MonoBehaviour
 
         canva.SetActive(true);
         PlayerController1.dialog = true;
+        dialogueActive = true;
         currentDialogueIndex = 0;
 
-        // Clear previous dialogue (skip first 2 children if they're UI elements)
-        int childCount = canva.transform.childCount;
-        Debug.Log($"NPC: Canvas has {childCount} children");
-
-        for (int i = childCount - 1; i >= 2; i--)
-        {
-            Destroy(canva.transform.GetChild(i).gameObject);
-        }
-
+        ClearDialogueBoxes();
         ShowNextDialogue();
     }
 
-    void ShowNextDialogue()
+    void AdvanceDialogue()
     {
-        Debug.Log($"NPC: ShowNextDialogue - Index: {currentDialogueIndex}/{dialogs.Length}");
+        ClearDialogueBoxes();
+        currentDialogueIndex++;
 
-        if (currentDialogueIndex < dialogs.Length)
+        if (currentDialogueIndex < dialogues.Length)
         {
-            NewDialogue(dialogs[currentDialogueIndex]);
-
-            // Show the UI element at index 1
-            if (canva.transform.childCount > 1)
-            {
-                canva.transform.GetChild(1).gameObject.SetActive(true);
-            }
-
-            if (continueButton != null)
-            {
-                continueButton.gameObject.SetActive(true);
-            }
+            ShowNextDialogue();
         }
         else
         {
@@ -95,21 +71,41 @@ public class NPCSystem : MonoBehaviour
         }
     }
 
-    void OnContinueButtonClicked()
+    void ShowNextDialogue()
     {
-        Debug.Log("NPC: Continue button clicked!");
-        currentDialogueIndex++;
-        ShowNextDialogue();
+        Debug.Log($"NPC: ShowNextDialogue - Index: {currentDialogueIndex}/{dialogues.Length}");
+
+        if (currentDialogueIndex < dialogues.Length)
+        {
+            NewDialogue(dialogues[currentDialogueIndex]);
+
+            if (canva.transform.childCount > 1)
+            {
+                canva.transform.GetChild(1).gameObject.SetActive(true);
+            }
+        }
+    }
+
+    void ClearDialogueBoxes()
+    {
+        int childCount = canva.transform.childCount;
+
+        for (int i = childCount - 1; i >= 0; i--)
+        {
+            Transform child = canva.transform.GetChild(i);
+            // Don't destroy the background UI element at index 1
+            if (i > 1)
+            {
+                Destroy(child.gameObject);
+            }
+        }
     }
 
     void EndDialogue()
     {
         Debug.Log("NPC: Ending dialogue");
 
-        if (continueButton != null)
-        {
-            continueButton.gameObject.SetActive(false);
-        }
+        dialogueActive = false;
         PlayerController1.dialog = false;
 
         if (canva != null)
