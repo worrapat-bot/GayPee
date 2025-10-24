@@ -83,8 +83,6 @@ public class PlayerController : MonoBehaviour
         if (inventory == null)
             inventory = FindObjectOfType<RadialInventoryVertical>();
 
-        // ⭐ ปิด Ragdoll ตอนเริ่มเกม
-        SetRagdoll(false);
     }
 
     void Update()
@@ -98,12 +96,6 @@ public class PlayerController : MonoBehaviour
         HandleDropItem();
         UpdateStamina();
         UpdateHeadBob();
-
-        // ⭐ กด R เพื่อทดสอบ Ragdoll (เอาออกได้ถ้าไม่ต้องการ)
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            EnableRagdoll();
-        }
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -124,8 +116,6 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // ⭐ ถ้า Ragdoll เปิดอยู่ ห้ามเคลื่อนที่
-        if (isRagdollActive) return;
         if (!dialog)
         {
             Move();
@@ -265,72 +255,6 @@ public class PlayerController : MonoBehaviour
     }
 
     public float GetStamina() => stamina / maxStamina;
-
-    // ⭐⭐⭐ ระบบ Ragdoll ⭐⭐⭐
-
-    // ตั้งค่า Ragdoll เปิด/ปิด
-    void SetRagdoll(bool enable)
-    {
-        if (ragdollBodies == null || ragdollBodies.Length == 0)
-        {
-            Debug.LogWarning("⚠️ No ragdoll bodies assigned!");
-            return;
-        }
-
-        foreach (var ragdollRb in ragdollBodies)
-        {
-            if (ragdollRb != null)
-            {
-                ragdollRb.isKinematic = !enable;
-            }
-        }
-    }
-
-    // เปิด Ragdoll - เรียกจากที่อื่นได้
-    public void EnableRagdoll()
-    {
-        isRagdollActive = true;
-
-        // ปิด Animator ให้ร่างหลวม
-        if (anim != null)
-            anim.enabled = false;
-
-        // เปิดฟิสิกส์ Ragdoll
-        SetRagdoll(true);
-
-        // ปิด Collider หลักเพื่อไม่ให้ซ้อนกัน
-        if (col != null)
-            col.enabled = false;
-
-        // ปิด Rigidbody หลัก
-        if (rb != null)
-            rb.isKinematic = true;
-
-        Debug.Log("💀 Ragdoll Activated!");
-    }
-
-    // ปิด Ragdoll - กลับมายืนได้ (ถ้าต้องการ)
-    public void DisableRagdoll()
-    {
-        isRagdollActive = false;
-
-        // เปิด Animator กลับมา
-        if (anim != null)
-            anim.enabled = true;
-
-        // ปิดฟิสิกส์ Ragdoll
-        SetRagdoll(false);
-
-        // เปิด Collider หลักกลับมา
-        if (col != null)
-            col.enabled = true;
-
-        // เปิด Rigidbody หลัก
-        if (rb != null)
-            rb.isKinematic = false;
-
-        Debug.Log("✅ Ragdoll Deactivated!");
-    }
 
     void OnGUI()
     {
