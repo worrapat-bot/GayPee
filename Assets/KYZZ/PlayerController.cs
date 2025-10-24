@@ -57,6 +57,7 @@ public class PlayerController : MonoBehaviour
     private float throwChargeStart = -1f;
     private bool isChargingThrow = false;
     private bool isRagdollActive = false; // ⭐ เช็คว่า ragdoll เปิดอยู่ไหม
+    public static bool dialog = false;
 
     void Awake()
     {
@@ -109,14 +110,26 @@ public class PlayerController : MonoBehaviour
             Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = !Cursor.visible;
         }
+        if (!PlayerController.dialog)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     void FixedUpdate()
     {
         // ⭐ ถ้า Ragdoll เปิดอยู่ ห้ามเคลื่อนที่
         if (isRagdollActive) return;
-
-        Move();
+        if (!dialog)
+        {
+            Move();
+        }
     }
 
     void HandleMouseLook()
