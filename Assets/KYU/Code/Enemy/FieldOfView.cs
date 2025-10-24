@@ -32,7 +32,7 @@ public class FieldOfView : MonoBehaviour // ***[แก้ไขแล้ว]***:
 
     // --- UNITY LIFECYCLE ---
 
-    void Start()
+    public void Start()
     {
         // เริ่ม Coroutine เพื่อตรวจสอบเป้าหมายเป็นระยะ
         StartCoroutine(FindTargetsWithDelay(DelayCheckTime));
@@ -42,7 +42,7 @@ public class FieldOfView : MonoBehaviour // ***[แก้ไขแล้ว]***:
     // --- COROUTINE ---
 
     // Coroutine ที่ทำงานซ้ำเพื่อตรวจสอบเป้าหมายตามช่วงเวลาที่กำหนด
-    IEnumerator FindTargetsWithDelay(float delay)
+    public IEnumerator FindTargetsWithDelay(float delay)
     {
         while (true)
         {
@@ -55,7 +55,7 @@ public class FieldOfView : MonoBehaviour // ***[แก้ไขแล้ว]***:
     // --- CORE FOV LOGIC ---
 
     // # FindVisibleTarget(): void - ตรวจสอบว่าเป้าหมายอยู่ในระยะการมองเห็นหรือไม่
-    void FindVisibleTarget()
+    public void FindVisibleTarget()
     {
         VisibleTarget = null; // ตั้งค่าเป้าหมายที่มองเห็นเป็น Null ทุกครั้งที่ตรวจสอบใหม่
 
@@ -110,7 +110,7 @@ public class FieldOfView : MonoBehaviour // ***[แก้ไขแล้ว]***:
     // --- DEBUG VISUALIZATION (Gizmos) ---
 
     // # OnDrawGizmos(): void - วาดเส้น FOV ใน Scene View เพื่อการ Debug
-    void OnDrawGizmos()
+    public void OnDrawGizmos()
     {
         Gizmos.color = Color.yellow;
         
