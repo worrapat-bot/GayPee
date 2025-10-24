@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class PlayerController : MonoBehaviour
@@ -16,6 +16,11 @@ public class PlayerController : MonoBehaviour
     [Header("Combat")]
     [SerializeField] private float punchCooldown = 0.5f;
 
+    [Header("Throw Settings")]
+    [SerializeField] private float minThrowForce = 5f;
+    [SerializeField] private float maxThrowForce = 20f;
+    [SerializeField] private float maxChargeTime = 2f;
+
     [Header("Head Bob")]
     [SerializeField] private float bobSpeed = 10f;
     [SerializeField] private float bobAmount = 0.05f;
@@ -23,7 +28,16 @@ public class PlayerController : MonoBehaviour
     [Header("Mouse Look")]
     [SerializeField] private float mouseSensitivity = 2f;
     [SerializeField] private float maxLookAngle = 80f;
-    [SerializeField] private float bodyRotationSpeed = 5f;
+
+    [Header("UI Settings")]
+    [SerializeField] private Color staminaBarBg = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+    [SerializeField] private Color staminaBarColor = new Color(0.3f, 0.9f, 0.3f, 1f);
+    [SerializeField] private Color throwBarBg = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+    [SerializeField] private Color throwBarColorStart = Color.yellow;
+    [SerializeField] private Color throwBarColorMax = Color.red;
+
+    [Header("Inventory Reference")]
+    [SerializeField] private RadialInventoryVertical inventory;
 
     private Rigidbody rb;
     private CapsuleCollider col;
@@ -36,29 +50,30 @@ public class PlayerController : MonoBehaviour
     private bool isBlocking;
     private float lastPunch;
     private float rotationX;
+    private float throwChargeStart = -1f;
+    private bool isChargingThrow = false;
 
     void Awake()
     {
-        // Auto setup Rigidbody
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-        // Auto setup Collider
         col = GetComponent<CapsuleCollider>();
         normalHeight = col.height;
 
-        // Setup Camera
         cam = GetComponentInChildren<Camera>();
         if (cam == null) cam = Camera.main;
         if (cam != null) camStartPos = cam.transform.localPosition;
 
         stamina = maxStamina;
 
-        // Lock cursor
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        if (inventory == null)
+            inventory = FindObjectOfType<RadialInventoryVertical>();
     }
 
     void Update()
@@ -66,10 +81,10 @@ public class PlayerController : MonoBehaviour
         HandleMouseLook();
         HandleCrouch();
         HandleCombat();
+        HandleDropItem();
         UpdateStamina();
         UpdateHeadBob();
 
-        // Toggle cursor lock
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
@@ -87,16 +102,13 @@ public class PlayerController : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // Rotate player left/right
         transform.Rotate(Vector3.up * mouseX);
 
-        // Rotate camera up/down
         rotationX -= mouseY;
         rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
 
         if (cam != null)
         {
-            Vector3 currentRot = cam.transform.localEulerAngles;
             cam.transform.localEulerAngles = new Vector3(rotationX, 0, 0);
         }
     }
@@ -107,12 +119,10 @@ public class PlayerController : MonoBehaviour
         float v = Input.GetAxisRaw("Vertical");
         Vector3 dir = (transform.right * h + transform.forward * v).normalized;
 
-        // Calculate speed
         bool wantRun = Input.GetKey(KeyCode.LeftShift) && stamina > 1f && !isCrouching;
         float speed = isCrouching ? crouchSpeed : (wantRun ? runSpeed : walkSpeed);
         if (isBlocking) speed *= 0.3f;
 
-        // Apply movement
         Vector3 vel = rb.linearVelocity;
         vel.x = dir.x * speed;
         vel.z = dir.z * speed;
@@ -126,7 +136,6 @@ public class PlayerController : MonoBehaviour
             isCrouching = !isCrouching;
             col.height = isCrouching ? normalHeight * 0.5f : normalHeight;
 
-            // Adjust camera position
             if (cam != null)
             {
                 Vector3 pos = camStartPos;
@@ -138,15 +147,52 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombat()
     {
-        // Punch
-        if (Input.GetMouseButtonDown(0) && Time.time > lastPunch + punchCooldown && !isBlocking)
+        if (Input.GetMouseButtonDown(0) && !isBlocking)
         {
-            Debug.Log("PUNCH!");
-            lastPunch = Time.time;
+            if (inventory != null && inventory.HasItemInHand())
+            {
+                isChargingThrow = true;
+                throwChargeStart = Time.time;
+                Debug.Log("🔋 Charging throw...");
+            }
+            else
+            {
+                if (Time.time > lastPunch + punchCooldown)
+                {
+                    Debug.Log("👊 PUNCH!");
+                    lastPunch = Time.time;
+                }
+            }
         }
 
-        // Block
+        if (Input.GetMouseButtonUp(0) && isChargingThrow)
+        {
+            isChargingThrow = false;
+
+            float chargeTime = Time.time - throwChargeStart;
+            chargeTime = Mathf.Clamp(chargeTime, 0f, maxChargeTime);
+            float throwForce = Mathf.Lerp(minThrowForce, maxThrowForce, chargeTime / maxChargeTime);
+
+            if (inventory != null)
+            {
+                inventory.ThrowCurrentItem(throwForce);
+                Debug.Log($"🚀 Threw with force: {throwForce:F1}");
+            }
+        }
+
         isBlocking = Input.GetMouseButton(1);
+    }
+
+    void HandleDropItem()
+    {
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            if (inventory != null && inventory.HasItemInHand())
+            {
+                inventory.DropCurrentItem();
+                Debug.Log("📦 Dropped item");
+            }
+        }
     }
 
     void UpdateStamina()
@@ -187,9 +233,27 @@ public class PlayerController : MonoBehaviour
 
     void OnGUI()
     {
-        // Simple Stamina Bar
-        GUI.Box(new Rect(10, 10, 200, 30), $"Stamina: {stamina:F0}/{maxStamina}");
-        GUI.Box(new Rect(10, 50, 200, 20), "");
-        GUI.Box(new Rect(10, 50, 200 * GetStamina(), 20), "");
+        // Stamina Bar - ไม่มีตัวเลข
+        GUI.color = staminaBarBg;
+        GUI.Box(new Rect(10, 10, 200, 20), "");
+
+        GUI.color = staminaBarColor;
+        GUI.Box(new Rect(10, 10, 200 * GetStamina(), 20), "");
+
+        // Throw Power Bar - ตอนชาร์จ
+        if (isChargingThrow)
+        {
+            float chargeTime = Time.time - throwChargeStart;
+            chargeTime = Mathf.Clamp(chargeTime, 0f, maxChargeTime);
+            float chargePercent = chargeTime / maxChargeTime;
+
+            GUI.color = throwBarBg;
+            GUI.Box(new Rect(10, 40, 200, 20), "");
+
+            GUI.color = Color.Lerp(throwBarColorStart, throwBarColorMax, chargePercent);
+            GUI.Box(new Rect(10, 40, 200 * chargePercent, 20), "");
+        }
+
+        GUI.color = Color.white;
     }
 }
