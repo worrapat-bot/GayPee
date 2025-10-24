@@ -19,13 +19,17 @@ public class RadialInventoryVertical : MonoBehaviour
     [Header("Player Hand Reference")]
     public Transform handPoint;
 
-    [Header("🆕 Drop Settings")]
-    [SerializeField] private float dropDistance = 2f; // ระยะที่วางของ (เมตร)
+    [Header("Drop Settings")]
+    [SerializeField] private float dropDistance = 2f;
 
     private bool isOpen;
     private List<InventorySlot> slots = new List<InventorySlot>();
     private int selectedIndex = -1;
     private float openProgress;
+
+    // ✅ เพิ่มตัวแปรสำหรับปุ่ม Drop ใหม่ (ใช้ Q แทน E เพื่อไม่ให้ชนกับ Pick Up)
+    [Header("Input")]
+    [SerializeField] private KeyCode dropKey = KeyCode.Q;
 
     private class InventorySlot
     {
@@ -62,14 +66,19 @@ public class RadialInventoryVertical : MonoBehaviour
             isOpen = false;
             Time.timeScale = 1f;
 
+            // เมื่อปิด Inventory ให้เลือก Item ที่กำลัง Hover อยู่
             if (selectedIndex >= 0)
                 EquipSelectedItem();
             else
                 ClearHandItem();
+
+            // ✅ ล็อก Cursor กลับเมื่อปิด Inventory
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
 
-        // ✅ กด E = วางของ (ถ้ามีของในมือ)
-        if (Input.GetKeyDown(KeyCode.E))
+        // ✅ เปลี่ยนไปใช้ปุ่ม DropKey (ตั้งค่าเป็น Q หรืออื่น ๆ)
+        if (Input.GetKeyDown(dropKey))
         {
             DropCurrentItem();
         }
@@ -87,7 +96,9 @@ public class RadialInventoryVertical : MonoBehaviour
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            float yOffset = i * spacing * openProgress;
+            // Center the slots around the screenPosition
+            float centerOffset = (slotCount - 1) * spacing / 2f;
+            float yOffset = i * spacing * openProgress - centerOffset * openProgress;
             slots[i].position = screenPosition + new Vector2(0, yOffset);
         }
     }
@@ -106,10 +117,9 @@ public class RadialInventoryVertical : MonoBehaviour
             if (selectedIndex < 0) selectedIndex = slots.Count - 1;
             if (selectedIndex >= slots.Count) selectedIndex = 0;
 
-            if (slots[selectedIndex].isEmpty)
-                ClearHandItem();
-            else
-                EquipSelectedItem();
+            // ไม่ต้อง Equip ทันทีที่ Scroll ในโหมด Inventory
+            // Equip จะถูกเรียกเมื่อปล่อยปุ่มเมาส์กลาง (GetMouseButtonUp(2))
+
         }
 
         for (int i = 0; i < slots.Count; i++)
@@ -121,10 +131,12 @@ public class RadialInventoryVertical : MonoBehaviour
 
     void ClearHandItem()
     {
+        // 🔹 SetParent(handPoint) แล้วค่อย SetActive(false) เพื่อป้องกัน Parent หาย
         foreach (var slot in slots)
         {
             if (slot.itemObject != null)
             {
+                // Unparent ก่อน Disable เพื่อป้องกัน Item ถูก Destroy พร้อม Player
                 slot.itemObject.transform.SetParent(null);
                 slot.itemObject.SetActive(false);
             }
@@ -153,9 +165,26 @@ public class RadialInventoryVertical : MonoBehaviour
         slot.itemObject.transform.SetParent(handPoint);
         slot.itemObject.transform.localPosition = Vector3.zero;
         slot.itemObject.transform.localRotation = Quaternion.identity;
+
+        // 🔹 ยกเลิก Rigidbody/Collider ถ้ามี เพื่อให้ถือได้นิ่งๆ
+        Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        // 🔹 ปิด Collider (ถ้ามี)
+        Collider col = slot.itemObject.GetComponent<Collider>();
+        if (col != null)
+        {
+            // อาจจะเลือกปิด Collider เฉพาะตัวที่ใช้ชนกับโลกจริง แต่คง Collider ที่ใช้ Trigger หยิบของไว้
+            // แต่สำหรับ Item ที่ Equip แล้ว ควรปิดทั้งหมด
+            col.enabled = false;
+        }
     }
 
-    // ✅ ฟังก์ชันวางของ - เรียกจาก PlayerController ด้วย
     public void DropCurrentItem()
     {
         if (selectedIndex < 0 || selectedIndex >= slots.Count) return;
@@ -163,43 +192,41 @@ public class RadialInventoryVertical : MonoBehaviour
         var slot = slots[selectedIndex];
         if (slot.isEmpty || slot.itemObject == null) return;
 
-        // วางของหน้าผู้เล่น (สูงขึ้นหน่อย)
         Camera cam = Camera.main;
         Vector3 dropPos = cam.transform.position + cam.transform.forward * dropDistance;
-        dropPos.y += 0.5f; // ⭐ ยกขึ้นสูงกว่าพื้นนิดหน่อย
+        dropPos.y += 0.5f;
 
         slot.itemObject.SetActive(true);
         slot.itemObject.transform.SetParent(null);
         slot.itemObject.transform.position = dropPos;
         slot.itemObject.transform.rotation = Quaternion.identity;
 
-        // ✅ เช็คและเพิ่ม Collider ถ้ายังไม่มี
         EnsurePhysicsComponents(slot.itemObject);
 
-        // เพิ่ม Rigidbody ถ้ายังไม่มี
         Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            rb = slot.itemObject.AddComponent<Rigidbody>();
-        }
+        // Rigidbody จะถูกเพิ่มใน EnsurePhysicsComponents ถ้าไม่มี
         rb.isKinematic = false;
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // ⭐ เปลี่ยนเป็น ContinuousDynamic
-        rb.mass = 1f; // ⭐ ตั้งค่า mass ให้ชัดเจน
-        rb.linearDamping = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย ไม่ให้ตกเร็วเกินไป
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.mass = 1f;
+        rb.linearDamping = 0.5f;
+
+        // ✅ เปิด Collider คืน
+        Collider col = slot.itemObject.GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = true;
+        }
 
         Debug.Log($"🟡 Dropped '{slot.itemName}' from inventory");
 
-        // ล้างช่องนี้
         slot.isEmpty = true;
         slot.itemObject = null;
         slot.itemName = "";
         slot.iconTexture = null;
 
-        // หาช่องถัดไปที่มีของ หรือ clear มือ
         FindNextItem();
     }
 
-    // ✅ ฟังก์ชันปาของ - เรียกจาก PlayerController
     public void ThrowCurrentItem(float force)
     {
         if (selectedIndex < 0 || selectedIndex >= slots.Count) return;
@@ -207,7 +234,6 @@ public class RadialInventoryVertical : MonoBehaviour
         var slot = slots[selectedIndex];
         if (slot.isEmpty || slot.itemObject == null) return;
 
-        // ปาของไปทางที่กล้องมอง
         Camera cam = Camera.main;
         Vector3 throwPos = cam.transform.position + cam.transform.forward * 0.5f;
 
@@ -216,34 +242,33 @@ public class RadialInventoryVertical : MonoBehaviour
         slot.itemObject.transform.position = throwPos;
         slot.itemObject.transform.rotation = Quaternion.identity;
 
-        // ✅ เช็คและเพิ่ม Collider ถ้ายังไม่มี
         EnsurePhysicsComponents(slot.itemObject);
 
-        // เพิ่ม Rigidbody และปา
         Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            rb = slot.itemObject.AddComponent<Rigidbody>();
-        }
+        // Rigidbody จะถูกเพิ่มใน EnsurePhysicsComponents ถ้าไม่มี
         rb.isKinematic = false;
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // ⭐ เปลี่ยนเป็น ContinuousDynamic
-        rb.mass = 1f; // ⭐ ตั้งค่า mass ให้ชัดเจน
-        rb.linearDamping = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.mass = 1f;
+        rb.linearDamping = 0.5f;
         rb.AddForce(cam.transform.forward * force, ForceMode.Impulse);
+
+        // ✅ เปิด Collider คืน
+        Collider col = slot.itemObject.GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = true;
+        }
 
         Debug.Log($"🚀 Threw '{slot.itemName}' with force {force}");
 
-        // ล้างช่องนี้
         slot.isEmpty = true;
         slot.itemObject = null;
         slot.itemName = "";
         slot.iconTexture = null;
 
-        // หาช่องถัดไปที่มีของ
         FindNextItem();
     }
 
-    // ✅ หาของชิ้นถัดไปหลังวาง/ปา
     void FindNextItem()
     {
         for (int i = 0; i < slots.Count; i++)
@@ -256,61 +281,56 @@ public class RadialInventoryVertical : MonoBehaviour
             }
         }
 
-        // ไม่มีของเหลือเลย
         selectedIndex = -1;
         ClearHandItem();
     }
 
-    // ✅ เช็คว่ามีของในมือไหม
     public bool HasItemInHand()
     {
         if (selectedIndex < 0 || selectedIndex >= slots.Count) return false;
         return !slots[selectedIndex].isEmpty && slots[selectedIndex].itemObject != null;
     }
 
-    // ✅ เช็คและเพิ่ม Physics Components อัตโนมัติ
     void EnsurePhysicsComponents(GameObject obj)
     {
-        // เช็ค Collider - ถ้าไม่มีให้เพิ่มแบบอัตโนมัติ
         Collider col = obj.GetComponent<Collider>();
         if (col == null)
         {
-            // ลองหา MeshFilter เพื่อใช้ขนาดที่เหมาะสม
             MeshFilter meshFilter = obj.GetComponent<MeshFilter>();
             if (meshFilter != null && meshFilter.sharedMesh != null)
             {
-                // ใช้ BoxCollider แทน MeshCollider เพราะเสถียรกว่า
                 BoxCollider boxCol = obj.AddComponent<BoxCollider>();
-
-                // คำนวณขนาด Collider จาก Mesh bounds
                 Bounds bounds = meshFilter.sharedMesh.bounds;
                 boxCol.center = bounds.center;
                 boxCol.size = bounds.size;
-
                 Debug.Log($"✅ Added BoxCollider (size: {bounds.size}) to {obj.name}");
             }
             else
             {
-                // ไม่มี Mesh ให้ใช้ BoxCollider ขนาดมาตรฐาน
                 BoxCollider boxCol = obj.AddComponent<BoxCollider>();
-                boxCol.size = Vector3.one * 0.5f; // ขนาดเล็กกว่าเดิม
+                boxCol.size = Vector3.one * 0.5f;
                 Debug.Log($"✅ Added BoxCollider (default) to {obj.name}");
             }
         }
-        else
-        {
-            Debug.Log($"✅ {obj.name} already has {col.GetType().Name}");
-        }
 
-        // ⭐ ปิด isTrigger ทุก Collider เพื่อให้ชนได้
+        // ตรวจสอบ Collider อีกครั้งเผื่อเพิ่งเพิ่มเข้าไป
         Collider[] allColliders = obj.GetComponents<Collider>();
         foreach (Collider c in allColliders)
         {
+            // ใน Drop/Throw ควรตรวจสอบว่า Collider ไม่ใช่ Trigger เพื่อให้ชนกับพื้น
             if (c.isTrigger)
             {
                 c.isTrigger = false;
                 Debug.Log($"🔓 Disabled isTrigger on {c.GetType().Name} of {obj.name}");
             }
+            c.enabled = true; // ให้แน่ใจว่าเปิดใช้งาน
+        }
+
+        // เพิ่ม Rigidbody ถ้าไม่มี
+        Rigidbody rb = obj.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = obj.AddComponent<Rigidbody>();
         }
     }
 
@@ -334,42 +354,112 @@ public class RadialInventoryVertical : MonoBehaviour
 
             if (!slot.isEmpty && slot.iconTexture != null)
             {
-                Rect iconRect = new Rect(rect.x + 5, rect.y + 5, size - 10, size - 10);
+                Rect iconRect = new Rect(rect.x + 2, rect.y + 2, size - 4, size - 4);
                 GUI.color = Color.white;
-                GUI.DrawTexture(iconRect, slot.iconTexture, ScaleMode.ScaleToFit);
+                GUI.DrawTexture(iconRect, slot.iconTexture, ScaleMode.StretchToFill);
             }
         }
 
         GUI.color = Color.white;
     }
 
-    // เพิ่มของเข้า Inventory
     public void AddItem(GameObject item, string name, Texture2D icon = null)
     {
+        // 🔹 หาช่องว่างแรก
         for (int i = 0; i < slots.Count; i++)
         {
             if (slots[i].isEmpty)
             {
+                // 🔹 ทำสำเนา texture เพื่อป้องกัน bug icon ดำ
+                if (icon != null)
+                {
+                    Texture2D fixedTex = new Texture2D(icon.width, icon.height, TextureFormat.RGBA32, false);
+                    fixedTex.SetPixels(icon.GetPixels());
+                    fixedTex.Apply();
+                    icon = fixedTex;
+                }
+
+                // 🔹 เซ็ตข้อมูลลงช่อง
                 slots[i].itemObject = item;
                 slots[i].itemName = name;
                 slots[i].iconTexture = icon;
                 slots[i].isEmpty = false;
 
+                // 🔹 ปิดการแสดงผลชั่วคราว
                 item.SetActive(false);
                 item.transform.SetParent(null);
 
-                // ถ้ายังไม่เลือกอะไรเลย → auto select
-                if (selectedIndex == -1)
+                // 🔹 ปิด Collider/Rigidbody เพื่อป้องกันการชน
+                Rigidbody rb = item.GetComponent<Rigidbody>();
+                if (rb != null) rb.isKinematic = true;
+                Collider col = item.GetComponent<Collider>();
+                if (col != null) col.enabled = false;
+
+
+                Debug.Log($"🟢 Added item '{name}' to slot #{i + 1}");
+
+                // 🔹 ถ้ายังไม่มีของในมือ ให้เลือกช่องนี้
+                if (selectedIndex == -1 || slots[selectedIndex].isEmpty) // ✅ ตรวจสอบเพิ่ม: หรือช่องที่เลือกอยู่เดิมว่างเปล่า
                 {
                     selectedIndex = i;
                     EquipSelectedItem();
                 }
 
-                Debug.Log($"🟢 Added item '{name}' to slot #{i + 1}");
                 return;
             }
         }
 
-        Debug.Log("⚠️ Inventory full!");
+        // 🔹 ถ้าไม่มีช่องว่างเลย
+        Debug.Log("⚠️ Inventory full! Could not add item: " + name);
+
+        // ✅ ถ้า Inventory เต็ม ให้ทำลาย Item ที่พยายามจะหยิบ (หรือจัดการตามต้องการ)
+        Destroy(item);
+    }
+
+
+    // ✅ ฟังก์ชันใหม่ที่เพิ่มเข้ามา
+    public bool HasItem(string itemName)
+    {
+        foreach (var slot in slots)
+        {
+            if (!slot.isEmpty && slot.itemName == itemName)
+                return true;
+        }
+        return false;
+    }
+    // ✅ เพิ่มฟังก์ชันนี้ลงไปใน RadialInventoryVertical.cs
+    public string GetCurrentItemName()
+    {
+        if (selectedIndex < 0 || selectedIndex >= slots.Count) return "";
+
+        var slot = slots[selectedIndex];
+        if (slot.isEmpty) return "";
+
+        return slot.itemName;
+    }
+    // ✅ ฟังก์ชันลบไอเทมที่ถืออยู่ในมือ
+    public void RemoveCurrentItem()
+    {
+        if (selectedIndex < 0 || selectedIndex >= slots.Count) return;
+
+        var slot = slots[selectedIndex];
+        if (slot.isEmpty) return;
+
+        // ✅ ทำลาย GameObject (ถ้ามี)
+        if (slot.itemObject != null)
+        {
+            Destroy(slot.itemObject);
+        }
+
+        Debug.Log($"🗑️ Removed '{slot.itemName}' from inventory");
+
+        // ✅ ล้างข้อมูล slot
+        slot.isEmpty = true;
+        slot.itemObject = null;
+        slot.itemName = "";
+        slot.iconTexture = null;
+
+        // ✅ หาไอเทมถัดไป (ถ้ามี)
+        FindNextItem();
     }
 }

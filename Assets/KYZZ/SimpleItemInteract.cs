@@ -3,10 +3,13 @@ using TMPro;
 
 public class SimpleItemInteract : MonoBehaviour
 {
+    [Header("Interact Settings")]
     public float interactDistance = 3f;
     public KeyCode interactKey = KeyCode.E;
-    public Transform handPoint;
-    public Texture2D itemIcon;
+
+    [Header("Item Settings")]
+    public Sprite itemIcon;
+    public string itemID = "Flashlight"; // ตั้งชื่อไอเทม
 
     private Camera cam;
     private bool collected = false;
@@ -21,6 +24,7 @@ public class SimpleItemInteract : MonoBehaviour
             GameObject textObj = new GameObject("CollectText");
             textObj.transform.SetParent(transform);
             textObj.transform.localPosition = new Vector3(0, 1.0f, 0);
+
             text3D = textObj.AddComponent<TextMeshPro>();
             text3D.text = "Press E to Collect";
             text3D.fontSize = 2;
@@ -38,42 +42,76 @@ public class SimpleItemInteract : MonoBehaviour
 
     void Update()
     {
-        if (collected || handPoint == null) return;
+        if (collected) return;
 
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player == null) return;
 
         float dist = Vector3.Distance(player.transform.position, transform.position);
-
         text3D.transform.rotation = Quaternion.LookRotation(text3D.transform.position - cam.transform.position);
         text3D.gameObject.SetActive(dist < interactDistance);
 
-        // ✅ เมื่อกด E เก็บของ
         if (dist < interactDistance && Input.GetKeyDown(interactKey))
         {
-            collected = true;
-            text3D.gameObject.SetActive(false);
-
-            // ✅ หา inventory
-            RadialInventoryVertical inventory = FindObjectOfType<RadialInventoryVertical>();
-
-            if (inventory != null)
-            {
-                // ✅ ถ่ายภาพไอคอนถ้ายังไม่มี
-                Texture2D iconToUse = itemIcon;
-                if (iconToUse == null)
-                    iconToUse = CaptureItemIcon(gameObject);
-
-                // ✅ เรียก AddItem เพียงครั้งเดียว
-                inventory.AddItem(gameObject, gameObject.name, iconToUse);
-            }
+            CollectItem();
         }
     }
 
-    private Texture2D CaptureItemIcon(GameObject obj)
+    void CollectItem()
+    {
+        collected = true;
+        text3D.gameObject.SetActive(false);
+
+        RadialInventoryVertical inventory = FindObjectOfType<RadialInventoryVertical>();
+        if (inventory != null)
+        {
+            Sprite iconToUse = itemIcon ?? CaptureItemIconAsSprite(gameObject);
+            Texture2D iconTexture = SpriteToTexture(iconToUse);
+
+            inventory.AddItem(gameObject, itemID, iconTexture);
+        }
+    }
+
+    Texture2D SpriteToTexture(Sprite sprite)
+    {
+        if (sprite == null) return Texture2D.whiteTexture;
+
+        Texture2D source = sprite.texture;
+        Rect rect = sprite.rect;
+        int x = Mathf.FloorToInt(rect.x);
+        int y = Mathf.FloorToInt(rect.y);
+        int width = Mathf.FloorToInt(rect.width);
+        int height = Mathf.FloorToInt(rect.height);
+
+        if (source.isReadable)
+        {
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            Color[] pixels = source.GetPixels(x, y, width, height);
+            tex.SetPixels(pixels);
+            tex.Apply();
+            return tex;
+        }
+        else
+        {
+            RenderTexture rt = RenderTexture.GetTemporary(width, height, 0);
+            Graphics.Blit(source, rt);
+
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            tex.Apply();
+
+            RenderTexture.active = null;
+            RenderTexture.ReleaseTemporary(rt);
+            return tex;
+        }
+    }
+
+    Sprite CaptureItemIconAsSprite(GameObject obj)
     {
         var tempCam = new GameObject("TempIconCam").AddComponent<Camera>();
         tempCam.backgroundColor = Color.clear;
+        tempCam.clearFlags = CameraClearFlags.SolidColor;
         tempCam.orthographic = true;
         tempCam.orthographicSize = 0.5f;
         tempCam.transform.position = obj.transform.position + Vector3.back * 2f;
@@ -81,9 +119,10 @@ public class SimpleItemInteract : MonoBehaviour
 
         RenderTexture rt = new RenderTexture(128, 128, 16);
         tempCam.targetTexture = rt;
-        Texture2D tex = new Texture2D(128, 128, TextureFormat.RGBA32, false);
 
+        Texture2D tex = new Texture2D(128, 128, TextureFormat.RGBA32, false);
         tempCam.Render();
+
         RenderTexture.active = rt;
         tex.ReadPixels(new Rect(0, 0, 128, 128), 0, 0);
         tex.Apply();
@@ -92,6 +131,7 @@ public class SimpleItemInteract : MonoBehaviour
         Destroy(rt);
         Destroy(tempCam.gameObject);
 
-        return tex;
+        Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+        return sprite;
     }
 }
