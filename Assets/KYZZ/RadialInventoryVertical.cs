@@ -185,7 +185,7 @@ public class RadialInventoryVertical : MonoBehaviour
         rb.isKinematic = false;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // ⭐ เปลี่ยนเป็น ContinuousDynamic
         rb.mass = 1f; // ⭐ ตั้งค่า mass ให้ชัดเจน
-        rb.drag = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย ไม่ให้ตกเร็วเกินไป
+        rb.linearDamping = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย ไม่ให้ตกเร็วเกินไป
 
         Debug.Log($"🟡 Dropped '{slot.itemName}' from inventory");
 
@@ -228,7 +228,7 @@ public class RadialInventoryVertical : MonoBehaviour
         rb.isKinematic = false;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // ⭐ เปลี่ยนเป็น ContinuousDynamic
         rb.mass = 1f; // ⭐ ตั้งค่า mass ให้ชัดเจน
-        rb.drag = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย
+        rb.linearDamping = 0.5f; // ⭐ เพิ่ม drag นิดหน่อย
         rb.AddForce(cam.transform.forward * force, ForceMode.Impulse);
 
         Debug.Log($"🚀 Threw '{slot.itemName}' with force {force}");
