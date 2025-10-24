@@ -8,14 +8,14 @@ public class NewDialogue : MonoBehaviour
     {
         if (Input.GetMouseButton(0) && transform.childCount > 1)
         {
-            if (PlayerController1.dialogue)
+            if (PlayerController1.dialog)
             {
                 transform.GetChild(index).gameObject.SetActive(true);
                 index += 1;
                 if(transform.childCount == index)
                 {
                     index = 2;
-                    PlayerController1.dialogue = false;
+                    PlayerController1.dialog = false;
                 }
             }
             else

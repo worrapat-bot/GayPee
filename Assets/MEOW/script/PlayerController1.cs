@@ -52,7 +52,7 @@ public class PlayerController1 : MonoBehaviour
     private float rotationX;
     private float throwChargeStart = -1f;
     private bool isChargingThrow = false;
-    static public bool dialogue = false;
+    static public bool dialog = false;
 
     void Awake()
     {
@@ -86,7 +86,7 @@ public class PlayerController1 : MonoBehaviour
         UpdateStamina();
         UpdateHeadBob();
 
-        if (!PlayerController1.dialogue)
+        if (!PlayerController1.dialog)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -100,7 +100,7 @@ public class PlayerController1 : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!dialogue)
+        if (!dialog)
         {
             Move();
         }
