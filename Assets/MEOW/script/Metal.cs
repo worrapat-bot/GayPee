@@ -1,17 +1,14 @@
 using UnityEngine;
 
-public class NamMon : MonoBehaviour
+public class Metal : MonoBehaviour
 {
     public int value;
-
     public void OnTriggerEnter(Collider other)
     {
         if(other.gameObject.tag == "Player")
         {
-            NamMonManager namMonManager = GameObject.FindAnyObjectByType<NamMonManager>();
-            namMonManager.currentNamMon += value;
-
-
+            MetalManager metalManager = GameObject.FindAnyObjectByType<MetalManager>();
+            metalManager.currentMetal += value;
             Destroy(gameObject);
         }
     }
