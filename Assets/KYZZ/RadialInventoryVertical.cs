@@ -391,7 +391,7 @@ public class RadialInventoryVertical : MonoBehaviour
             rb.useGravity = true;
             try
             {
-                rb.velocity = Vector3.zero;
+                rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
             catch
@@ -535,7 +535,7 @@ public class RadialInventoryVertical : MonoBehaviour
                     try
                     {
                         // compatibility: some Unity versions use velocity, some linearVelocity
-                        rbReal.velocity = Vector3.zero;
+                        rbReal.linearVelocity = Vector3.zero;
                         rbReal.angularVelocity = Vector3.zero;
                     }
                     catch
@@ -565,7 +565,7 @@ public class RadialInventoryVertical : MonoBehaviour
                     rbStored.useGravity = false;
                     try
                     {
-                        rbStored.velocity = Vector3.zero;
+                        rbStored.linearVelocity = Vector3.zero;
                         rbStored.angularVelocity = Vector3.zero;
                     }
                     catch
