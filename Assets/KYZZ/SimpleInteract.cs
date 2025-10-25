@@ -48,7 +48,16 @@ public class SimpleItemInteract : MonoBehaviour
         if (player == null) return;
 
         float dist = Vector3.Distance(player.transform.position, transform.position);
-        text3D.transform.rotation = Quaternion.LookRotation(text3D.transform.position - cam.transform.position);
+
+        // ให้ข้อความหันเข้าหากล้อง
+        // แก้ให้ Text หันหน้าไปหากล้อง ไม่กลับด้าน
+        if (text3D != null)
+        {
+            text3D.transform.LookAt(cam.transform);
+            text3D.transform.Rotate(0, 180f, 0);
+        }
+
+
         text3D.gameObject.SetActive(dist < interactDistance);
 
         if (dist < interactDistance && Input.GetKeyDown(interactKey))
@@ -68,8 +77,29 @@ public class SimpleItemInteract : MonoBehaviour
             Sprite iconToUse = itemIcon ?? CaptureItemIconAsSprite(gameObject);
             Texture2D iconTexture = SpriteToTexture(iconToUse);
 
+            // ✅ ส่งข้อมูลไปยังคลัง
             inventory.AddItem(gameObject, itemID, iconTexture);
         }
+
+        // ✅ ปิด Physics
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = false;
+        }
+
+        // ✅ ปิด script นี้
+        this.enabled = false;
+
+        // ✅ ลบ object จริงออกจากโลก (ของจะไม่ตกพื้นอีก)
+        Destroy(gameObject, 0.05f);
     }
 
     Texture2D SpriteToTexture(Sprite sprite)

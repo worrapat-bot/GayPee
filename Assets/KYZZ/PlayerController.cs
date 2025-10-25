@@ -82,7 +82,6 @@ public class PlayerController : MonoBehaviour
 
         if (inventory == null)
             inventory = FindObjectOfType<RadialInventoryVertical>();
-
     }
 
     void Update()

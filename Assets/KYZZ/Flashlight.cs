@@ -2,155 +2,322 @@
 
 public class Flashlight : MonoBehaviour
 {
-    [Header("🔦 Flashlight Settings")]
+    [Header("🔦 Flashlight Controls")]
     public KeyCode toggleKey = KeyCode.F;
-    public string itemID = "Flashlight"; // ใช้ตรวจใน Inventory
+    public string itemID = "Flashlight";
 
-    [Header("Light Properties")]
-    public float lightIntensity = 3f;
-    public float lightRange = 15f;
-    public float spotAngle = 60f;
-    public Color lightColor = Color.white;
+    [Header("💡 Light Properties - Aura Style")]
+    public float auraIntensity = 2.5f;
+    public float auraRange = 8f;
+    public Color auraColor = new Color(1f, 0.95f, 0.8f); // Warm light
+    [Range(0f, 2f)]
+    public float flickerAmount = 0.05f; // ไฟกระพริบเล็กน้อย
 
-    [Header("Battery System (Optional)")]
-    public bool useBattery = false;
-    public float batteryLife = 300f;
+    [Header("🔋 Battery System")]
+    public bool useBattery = true;
+    public float maxBatteryLife = 300f;
     public float batteryDrainRate = 1f;
+    public float lowBatteryThreshold = 20f; // %
 
-    [Header("🔊 Sounds")]
-    public AudioClip clickSound;
+    [Header("📱 Visual Feedback")]
+    public bool showFlashlightModel = true;
+    public Vector3 flashlightPositionOffset = new Vector3(0.3f, -0.2f, 0.5f);
+    public Vector3 flashlightRotationOffset = new Vector3(-10f, 0f, 0f);
+    public float flashlightScale = 1f;
 
-    private Light flashlight;
+    [Header("🔊 Audio")]
+    public AudioClip toggleOnSound;
+    public AudioClip toggleOffSound;
+    public AudioClip batteryLowWarning;
+    [Range(0f, 1f)]
+    public float soundVolume = 0.5f;
+
+    // Private variables
+    private Light auraLight;
     private float currentBattery;
     private bool isOn = false;
     private AudioSource audioSource;
     private RadialInventoryVertical inventory;
+    private GameObject flashlightModel;
+    private float flickerTimer = 0f;
+    private float baseIntensity;
+    private bool hasWarnedLowBattery = false;
 
     void Start()
     {
-        currentBattery = batteryLife;
+        InitializeFlashlight();
+    }
+
+    void InitializeFlashlight()
+    {
+        currentBattery = maxBatteryLife;
+        baseIntensity = auraIntensity;
         inventory = FindObjectOfType<RadialInventoryVertical>();
 
-        // สร้าง Light
-        GameObject lightObj = new GameObject("FlashlightBeam");
+        // สร้าง Point Light สำหรับออร่ารอบตัว
+        GameObject lightObj = new GameObject("FlashlightAura");
         lightObj.transform.SetParent(transform);
         lightObj.transform.localPosition = Vector3.zero;
         lightObj.transform.localRotation = Quaternion.identity;
 
-        flashlight = lightObj.AddComponent<Light>();
-        flashlight.type = LightType.Spot;
-        flashlight.intensity = lightIntensity;
-        flashlight.range = lightRange;
-        flashlight.spotAngle = spotAngle;
-        flashlight.color = lightColor;
-        flashlight.shadows = LightShadows.Soft;
-        flashlight.enabled = false;
+        auraLight = lightObj.AddComponent<Light>();
+        auraLight.type = LightType.Point; // เปลี่ยนจาก Spot เป็น Point
+        auraLight.intensity = auraIntensity;
+        auraLight.range = auraRange;
+        auraLight.color = auraColor;
+        auraLight.shadows = LightShadows.Soft;
+        auraLight.renderMode = LightRenderMode.ForcePixel;
+        auraLight.enabled = false;
 
         // สร้าง AudioSource
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f; // 2D sound
+        audioSource.volume = soundVolume;
 
-        Debug.Log("🔦 Flashlight created!");
+        // สร้างโมเดลไฟฉาย (แท่งง่ายๆ)
+        if (showFlashlightModel)
+        {
+            CreateFlashlightModel();
+        }
+
+        Debug.Log("🔦 Flashlight system initialized with aura lighting!");
+    }
+
+    void CreateFlashlightModel()
+    {
+        flashlightModel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        flashlightModel.name = "FlashlightModel";
+        flashlightModel.transform.SetParent(transform);
+
+        // ปรับขนาดให้เป็นรูปแท่งไฟฉาย
+        flashlightModel.transform.localScale = new Vector3(0.05f, 0.15f, 0.05f) * flashlightScale;
+        flashlightModel.transform.localPosition = flashlightPositionOffset;
+        flashlightModel.transform.localRotation = Quaternion.Euler(90f, 0f, 0f) * Quaternion.Euler(flashlightRotationOffset);
+
+        // เปลี่ยนสีให้ดูเป็นไฟฉาย
+        Renderer renderer = flashlightModel.GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            renderer.material = new Material(Shader.Find("Standard"));
+            renderer.material.color = new Color(0.2f, 0.2f, 0.2f); // Dark gray
+            renderer.material.SetFloat("_Metallic", 0.7f);
+            renderer.material.SetFloat("_Glossiness", 0.6f);
+        }
+
+        // ลบ Collider ออก
+        Collider col = flashlightModel.GetComponent<Collider>();
+        if (col != null) Destroy(col);
+
+        flashlightModel.SetActive(false);
     }
 
     void Update()
     {
-        // ต้องถือไฟฉายถึงจะใช้ได้
-        if (!IsHoldingFlashlight())
+        bool holdingFlashlight = IsHoldingFlashlight();
+
+        // แสดง/ซ่อนโมเดลไฟฉาย
+        if (flashlightModel != null)
+        {
+            flashlightModel.SetActive(holdingFlashlight);
+        }
+
+        // ถ้าไม่ได้ถือไฟฉาย ปิดไฟ
+        if (!holdingFlashlight)
         {
             if (isOn)
             {
-                isOn = false;
-                flashlight.enabled = false;
+                TurnOff();
             }
             return;
         }
 
-        // กด F เปิด/ปิดไฟฉาย
+        // Toggle ไฟฉาย
         if (Input.GetKeyDown(toggleKey))
         {
             ToggleFlashlight();
         }
 
-        // ระบบแบตเตอรี่
-        if (useBattery && isOn)
+        // ระบบแบตเตอรี่และเอฟเฟกต์
+        if (isOn)
         {
-            currentBattery -= batteryDrainRate * Time.deltaTime;
-
-            if (currentBattery <= 0f)
-            {
-                currentBattery = 0f;
-                isOn = false;
-                flashlight.enabled = false;
-                Debug.Log("🔋 Battery dead!");
-            }
-
-            // ไฟริบหรี่เมื่อแบตใกล้หมด
-            if (currentBattery < batteryLife * 0.2f)
-            {
-                flashlight.intensity = Mathf.Lerp(0.5f, lightIntensity, currentBattery / (batteryLife * 0.2f));
-            }
-            else
-            {
-                flashlight.intensity = lightIntensity;
-            }
+            UpdateBattery();
+            UpdateFlickerEffect();
         }
+    }
+
+    void UpdateBattery()
+    {
+        if (!useBattery) return;
+
+        currentBattery -= batteryDrainRate * Time.deltaTime;
+
+        if (currentBattery <= 0f)
+        {
+            currentBattery = 0f;
+            TurnOff();
+            Debug.Log("🔋 Battery depleted!");
+            return;
+        }
+
+        float batteryPercent = GetBatteryPercent();
+
+        // เตือนแบตต่ำ
+        if (batteryPercent <= lowBatteryThreshold && !hasWarnedLowBattery)
+        {
+            hasWarnedLowBattery = true;
+            if (batteryLowWarning != null)
+            {
+                audioSource.PlayOneShot(batteryLowWarning, soundVolume);
+            }
+            Debug.LogWarning("⚠️ Low battery!");
+        }
+
+        // ปรับความสว่างตามแบต
+        if (batteryPercent < lowBatteryThreshold)
+        {
+            float dimFactor = Mathf.Lerp(0.3f, 1f, batteryPercent / lowBatteryThreshold);
+            auraLight.intensity = baseIntensity * dimFactor;
+        }
+        else
+        {
+            auraLight.intensity = baseIntensity;
+            hasWarnedLowBattery = false;
+        }
+    }
+
+    void UpdateFlickerEffect()
+    {
+        if (flickerAmount <= 0f) return;
+
+        flickerTimer += Time.deltaTime * Random.Range(8f, 12f);
+        float flicker = Mathf.PerlinNoise(flickerTimer, 0f) * 2f - 1f;
+        float currentIntensity = auraLight.intensity;
+        auraLight.intensity = currentIntensity + (flicker * flickerAmount);
     }
 
     bool IsHoldingFlashlight()
     {
-        if (inventory == null) return false;
+        if (inventory == null)
+        {
+            inventory = FindObjectOfType<RadialInventoryVertical>();
+            if (inventory == null) return false;
+        }
 
-        return inventory.HasItemInHand() &&
-               inventory.GetCurrentItemName() == itemID;
+        return inventory.HasItemInHand() && inventory.GetCurrentItemName() == itemID;
     }
 
     void ToggleFlashlight()
     {
+        if (isOn)
+        {
+            TurnOff();
+        }
+        else
+        {
+            TurnOn();
+        }
+    }
+
+    void TurnOn()
+    {
         if (useBattery && currentBattery <= 0f)
         {
-            Debug.Log("⚠️ Battery empty!");
+            Debug.Log("⚠️ Battery is empty! Cannot turn on.");
             return;
         }
 
-        isOn = !isOn;
-        flashlight.enabled = isOn;
+        isOn = true;
+        auraLight.enabled = true;
 
-        if (clickSound != null)
+        if (toggleOnSound != null)
         {
-            audioSource.PlayOneShot(clickSound, 0.5f);
+            audioSource.PlayOneShot(toggleOnSound, soundVolume);
         }
 
-        Debug.Log(isOn ? "🔦 Flashlight ON" : "🔦 Flashlight OFF");
+        Debug.Log("🔦 Flashlight ON - Aura mode");
     }
 
+    void TurnOff()
+    {
+        isOn = false;
+        auraLight.enabled = false;
+
+        if (toggleOffSound != null)
+        {
+            audioSource.PlayOneShot(toggleOffSound, soundVolume);
+        }
+
+        Debug.Log("🔦 Flashlight OFF");
+    }
+
+    // Public Methods
     public void RechargeBattery(float amount)
     {
-        currentBattery = Mathf.Min(currentBattery + amount, batteryLife);
-        Debug.Log($"🔋 Battery recharged! Current: {currentBattery:F1}/{batteryLife}");
+        if (!useBattery) return;
+
+        float oldBattery = currentBattery;
+        currentBattery = Mathf.Min(currentBattery + amount, maxBatteryLife);
+
+        Debug.Log($"🔋 Battery recharged: {oldBattery:F1} → {currentBattery:F1} (+{amount:F1})");
+    }
+
+    public void SetBattery(float amount)
+    {
+        currentBattery = Mathf.Clamp(amount, 0f, maxBatteryLife);
     }
 
     public float GetBatteryPercent()
     {
-        return (currentBattery / batteryLife) * 100f;
+        if (!useBattery) return 100f;
+        return (currentBattery / maxBatteryLife) * 100f;
     }
 
+    public float GetBatteryCurrent()
+    {
+        return currentBattery;
+    }
+
+    public bool IsFlashlightOn()
+    {
+        return isOn;
+    }
+
+    public void ForceToggle(bool state)
+    {
+        if (state) TurnOn();
+        else TurnOff();
+    }
+
+    // UI Display
     void OnGUI()
     {
-        if (useBattery && IsHoldingFlashlight())
+        if (!IsHoldingFlashlight()) return;
+
+        int yOffset = 10;
+        float percent = GetBatteryPercent();
+
+        // Battery Display
+        if (useBattery)
         {
-            float percent = GetBatteryPercent();
             Color oldColor = GUI.color;
 
-            if (percent < 20f) GUI.color = Color.red;
+            if (percent < lowBatteryThreshold) GUI.color = Color.red;
             else if (percent < 50f) GUI.color = Color.yellow;
             else GUI.color = Color.green;
 
-            GUI.Label(new Rect(10, 10, 250, 30), $"🔋 Battery: {percent:F0}%");
-            GUI.Label(new Rect(10, 40, 250, 30), isOn ? "🔦 ON (Press F to turn off)" : "🔦 OFF (Press F to turn on)");
+            GUI.Label(new Rect(10, yOffset, 300, 30),
+                $"🔋 Battery: {percent:F0}% ({currentBattery:F1}s remaining)");
+            yOffset += 30;
 
             GUI.color = oldColor;
         }
+
+        // Status Display
+        GUI.color = isOn ? Color.green : Color.gray;
+        string status = isOn ? "🔦 ON" : "🔦 OFF";
+        GUI.Label(new Rect(10, yOffset, 300, 30), $"{status} (Press {toggleKey} to toggle)");
+
+        GUI.color = Color.white;
     }
 }

@@ -1,5 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class RadialInventoryVertical : MonoBehaviour
 {
@@ -48,6 +49,19 @@ public class RadialInventoryVertical : MonoBehaviour
 
         if (slotBackground == null)
             slotBackground = Texture2D.grayTexture;
+
+        // ✅ เปิด–ปิด Inventory อัตโนมัติหนึ่งรอบตอนเริ่มเกม
+        StartCoroutine(AutoInitInventory());
+    }
+
+    private IEnumerator AutoInitInventory()
+    {
+        yield return null; // รอเฟรมแรกให้ระบบโหลดกล้อง/Player เสร็จก่อน
+        isOpen = true;
+        UpdateSlotPositions();
+        isOpen = false;
+        openProgress = 0f;
+        Debug.Log("✅ Inventory initialized automatically at game start");
     }
 
     void Update()
@@ -126,6 +140,7 @@ public class RadialInventoryVertical : MonoBehaviour
         {
             if (slot.itemObject != null)
             {
+                // ถ้า object อยู่ในมือ ให้คืนสภาพ (unbind และ deactivate)
                 slot.itemObject.transform.SetParent(null);
                 slot.itemObject.SetActive(false);
             }
@@ -157,9 +172,24 @@ public class RadialInventoryVertical : MonoBehaviour
         Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
         if (rb != null)
         {
+            // ปิดฟิสิกส์ขณะถือ
             rb.isKinematic = true;
-            rb.linearVelocity = Vector3.zero;
+            // ปรับความเร็วเป็นศูนย์ - property name อาจต่างกันตาม Unity เวอร์ชัน
+            // หาก Unity6 ใช้ velocity, angularVelocity ให้ใช้แบบนี้ (compatibility)
+#if UNITY_202x_OR_OLDER
+            rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+#else
+            try
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            catch
+            {
+                // ถ้าชื่อ property ต่างใน Unity6 ก็ไม่ทำอะไรมาก (โค้ดยังคงปลอดภัย)
+            }
+#endif
         }
 
         Collider col = slot.itemObject.GetComponent<Collider>();
@@ -192,7 +222,12 @@ public class RadialInventoryVertical : MonoBehaviour
         rb.isKinematic = false;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.mass = 1f;
-        rb.linearDamping = 0.5f;
+        // หาก Unity ไม่ใช้ linearDamping ให้ใช้ drag เป็น fallback
+#if UNITY_202x_OR_OLDER
+        rb.drag = 0.5f;
+#else
+        try { rb.isKinematic = false; } catch { } // noop to avoid compile warning for conditional; actual fallback above
+#endif
 
         Collider col = droppedItem.GetComponent<Collider>();
         if (col != null) col.enabled = true;
@@ -232,7 +267,10 @@ public class RadialInventoryVertical : MonoBehaviour
         rb.isKinematic = false;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.mass = 1f;
-        rb.linearDamping = 0.5f;
+        // fallback to drag if linearDamping not available
+#if UNITY_202x_OR_OLDER
+        rb.drag = 0.5f;
+#endif
         rb.AddForce(cam.transform.forward * force, ForceMode.Impulse);
 
         Collider col = thrownItem.GetComponent<Collider>();
@@ -311,6 +349,7 @@ public class RadialInventoryVertical : MonoBehaviour
         {
             rb = obj.AddComponent<Rigidbody>();
         }
+        // don't modify other rb properties here; caller will set mode/mass as needed
     }
 
     // ✅ ฟังก์ชันใหม่: ทำให้ item ที่ drop แล้วสามารถเก็บได้อีก
@@ -382,24 +421,71 @@ public class RadialInventoryVertical : MonoBehaviour
                     icon = fixedTex;
                 }
 
-                // ✅ ถ้ามี SimpleItemInteract ให้ปิด script ชั่วคราวก่อน
-                var interact = item.GetComponent<SimpleItemInteract>();
-                if (interact != null)
-                    interact.enabled = false;
+                // ===========================
+                // แก้สำคัญ: เก็บ "สำเนา" ของ item แทนเก็บ reference ตรงๆ
+                // เพื่อให้ปลอดภัยแม้ต้นฉบับจะถูก Destroy โดย SimpleItemInteract
+                // ===========================
+                GameObject stored = null;
+                try
+                {
+                    stored = Instantiate(item);
+                }
+                catch
+                {
+                    // หากไม่สามารถ instantiate (แปลก) ให้ fallback เก็บ reference เดิม
+                    stored = item;
+                }
 
-                // 🔹 เซ็ตข้อมูลลงช่อง
-                slots[i].itemObject = item;
+                if (stored == null)
+                {
+                    Debug.LogError("❌ Failed to create stored copy of item. Aborting AddItem.");
+                    return;
+                }
+
+                stored.name = item.name + "_INV"; // ทำให้ชัดเจนใน hierarchy
+
+                // ✅ ปิด component ที่ไม่ต้องการบนสำเนา (เช่น SimpleItemInteract)
+                var interact = stored.GetComponent<SimpleItemInteract>();
+                if (interact != null)
+                {
+                    // ถ้าต้องการให้สำเนาไม่ทำงานเป็น pickup ให้ลบ component นั้นออก
+                    Destroy(interact);
+                }
+
+                // ปิด physics & collider ขณะอยู่ใน inventory
+                var rbStored = stored.GetComponent<Rigidbody>();
+                if (rbStored != null)
+                {
+                    rbStored.isKinematic = true;
+                    rbStored.useGravity = false;
+                    // clear velocities if properties exist
+                    try
+                    {
+                        rbStored.velocity = Vector3.zero;
+                        rbStored.angularVelocity = Vector3.zero;
+                    }
+                    catch { }
+                }
+
+                Collider[] cols = stored.GetComponents<Collider>();
+                foreach (var c in cols)
+                {
+                    c.enabled = false;
+                }
+
+                // 🔹 เซ็ตข้อมูลลงช่อง (ใช้สำเนา stored)
+                slots[i].itemObject = stored;
                 slots[i].itemName = name;
                 slots[i].iconTexture = icon;
                 slots[i].isEmpty = false;
 
-                // ✅ แก้บั๊กช่องแรก (อย่า SetActive(false) ถ้ามันเป็น Flashlight)
+                // ✅ อย่า SetActive(false) ถ้ามันเป็น Flashlight (ตาม logic เดิม)
                 if (!name.ToLower().Contains("flashlight"))
-                    item.SetActive(false);
+                    stored.SetActive(false);
 
-                item.transform.SetParent(null);
+                stored.transform.SetParent(null);
 
-                Debug.Log($"🟢 Added item '{name}' to slot #{i + 1}");
+                Debug.Log($"🟢 Added item '{name}' to slot #{i + 1} (stored copy)");
 
                 // ✅ ถ้ายังไม่มีของในมือ (selectedIndex == -1) ให้เลือกช่องนี้
                 if (selectedIndex == -1)
