@@ -2166,7 +2166,7 @@ Transform:
   m_GameObject: {fileID: 838375427}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.9858796, z: -0, w: 0.16745615}
-  m_LocalPosition: {x: 26.27, y: 0.27, z: 13.9}
+  m_LocalPosition: {x: -6.6, y: 0.27, z: 2.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2754,9 +2754,9 @@ MonoBehaviour:
   - {fileID: 1757231831}
   - {fileID: 376492634}
   - {fileID: 1515644351}
-  patrolFootstepSound: {fileID: 8300000, guid: 5e69b973ff47e07489c9d1f7c4050add, type: 3}
+  patrolFootstepSound: {fileID: 0}
   chaseFootstepSound: {fileID: 0}
-  detectionSound: {fileID: 8300000, guid: 5e69b973ff47e07489c9d1f7c4050add, type: 3}
+  detectionSound: {fileID: 0}
   searchSound: {fileID: 0}
   jumpscareSound: {fileID: 0}
   chaseBreathingSound: {fileID: 8300000, guid: 5e69b973ff47e07489c9d1f7c4050add, type: 3}
@@ -3061,7 +3061,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1814686913
 MonoBehaviour:
   m_ObjectHideFlags: 0
