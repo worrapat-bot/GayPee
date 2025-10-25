@@ -184,7 +184,7 @@ MonoBehaviour:
   innerSpotAngle: 30
   flickerAmount: 0.05
   useBattery: 0
-  maxBatteryLife: 300
+  maxBatteryLife: 5000
   batteryDrainRate: 1
   lowBatteryThreshold: 20
   showFlashlightModel: 1

@@ -167,7 +167,7 @@ public class RadialInventoryVertical : MonoBehaviour
         slot.itemObject.SetActive(true);
         slot.itemObject.transform.SetParent(handPoint);
         slot.itemObject.transform.localPosition = Vector3.zero;
-        slot.itemObject.transform.localRotation = Quaternion.identity;
+        slot.itemObject.transform.localRotation = Quaternion.Euler(90f, 90f, 90f);
 
         Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
         if (rb != null)
@@ -468,6 +468,17 @@ public class RadialInventoryVertical : MonoBehaviour
                 {
                     // ถ้าต้องการให้สำเนาไม่ทำงานเป็น pickup ให้ลบ component นั้นออก
                     Destroy(interact);
+                }
+
+                // ✅ ถ้าเป็น Flashlight ให้ลบ FlashlightModel (Cylinder สีม่วง) ออก
+                if (name.ToLower().Contains("flashlight"))
+                {
+                    Transform modelChild = stored.transform.Find("FlashlightModel");
+                    if (modelChild != null)
+                    {
+                        Destroy(modelChild.gameObject);
+                        Debug.Log("🗑️ Removed FlashlightModel from inventory copy");
+                    }
                 }
 
                 // ปิด physics & collider ขณะอยู่ใน inventory

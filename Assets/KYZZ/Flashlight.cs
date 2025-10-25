@@ -88,41 +88,7 @@ public class Flashlight : MonoBehaviour
         audioSource.spatialBlend = 0f; // 2D sound
         audioSource.volume = soundVolume;
 
-        // สร้างโมเดลไฟฉาย (แท่งง่ายๆ)
-        if (showFlashlightModel)
-        {
-            CreateFlashlightModel();
-        }
-
         Debug.Log("🔦 Flashlight system initialized with spotlight!");
-    }
-
-    void CreateFlashlightModel()
-    {
-        flashlightModel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        flashlightModel.name = "FlashlightModel";
-        flashlightModel.transform.SetParent(transform);
-
-        // ปรับขนาดให้เป็นรูปแท่งไฟฉาย
-        flashlightModel.transform.localScale = new Vector3(0.05f, 0.15f, 0.05f) * flashlightScale;
-        flashlightModel.transform.localPosition = flashlightPositionOffset;
-        flashlightModel.transform.localRotation = Quaternion.Euler(90f, 0f, 90f) * Quaternion.Euler(flashlightRotationOffset);
-
-        // เปลี่ยนสีให้ดูเป็นไฟฉาย
-        Renderer renderer = flashlightModel.GetComponent<Renderer>();
-        if (renderer != null)
-        {
-            renderer.material = new Material(Shader.Find("Standard"));
-            renderer.material.color = new Color(0.2f, 0.2f, 0.2f); // Dark gray
-            renderer.material.SetFloat("_Metallic", 0.7f);
-            renderer.material.SetFloat("_Glossiness", 0.6f);
-        }
-
-        // ลบ Collider ออก
-        Collider col = flashlightModel.GetComponent<Collider>();
-        if (col != null) Destroy(col);
-
-        flashlightModel.SetActive(false);
     }
 
     void Update()
