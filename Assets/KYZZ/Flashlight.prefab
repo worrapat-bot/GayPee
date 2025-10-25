@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 3883524780987010296}
   - component: {fileID: 7363575091996287802}
   - component: {fileID: 7003380298229777853}
-  - component: {fileID: 1294016823411502173}
+  - component: {fileID: 4830217376521336832}
   m_Layer: 0
   m_Name: Flashlight
   m_TagString: Untagged
@@ -32,7 +32,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 14.647744, y: -1.024, z: 1.904}
-  m_LocalScale: {x: 0.3, y: 0.34637, z: 0.3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -110,11 +110,11 @@ CapsuleCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5000001
-  m_Height: 2
-  m_Direction: 1
+  m_Radius: 0.1
+  m_Height: 0.1
+  m_Direction: 0
   m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
 --- !u!114 &7363575091996287802
 MonoBehaviour:
@@ -130,19 +130,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toggleKey: 102
   itemID: Flashlight
-  auraIntensity: 2.5
-  auraRange: 15
+  auraIntensity: 20
+  auraRange: 20
   auraColor: {r: 1, g: 0.95, b: 0.8, a: 1}
   spotAngle: 60
   innerSpotAngle: 30
-  flickerAmount: 0.05
+  flickerAmount: 0.102
   useBattery: 0
   maxBatteryLife: 5000
   batteryDrainRate: 1
   lowBatteryThreshold: 20
   showFlashlightModel: 1
   flashlightPositionOffset: {x: 0.3, y: -0.2, z: 0.5}
-  flashlightRotationOffset: {x: -10, y: 0, z: 0}
+  flashlightRotationOffset: {x: 0, y: 0, z: 0}
   flashlightScale: 1
   toggleOnSound: {fileID: 0}
   toggleOffSound: {fileID: 0}
@@ -165,11 +165,11 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
-  m_Size: {x: 1, y: 2.0000002, z: 1.0000005}
+  m_Size: {x: 0.1, y: 0.1, z: 0.1}
   m_Center: {x: 0.00000005960464, y: 0, z: -0.00000008940699}
---- !u!114 &1294016823411502173
+--- !u!114 &4830217376521336832
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -178,26 +178,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 3484397938998768880}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a71d071f9ec379741970f225986818a2, type: 3}
+  m_Script: {fileID: 11500000, guid: 4c158093fff99384d800d1e6f5d5ada8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleKey: 102
+  interactDistance: 3
+  interactKey: 101
+  itemIcon: {fileID: 21300000, guid: d601a5c13e88fb04ab4f7e8ad55473f2, type: 3}
   itemID: Flashlight
-  auraIntensity: 2.5
-  auraRange: 15
-  auraColor: {r: 1, g: 0.95, b: 0.8, a: 1}
-  spotAngle: 60
-  innerSpotAngle: 30
-  flickerAmount: 0.05
-  useBattery: 1
-  maxBatteryLife: 300
-  batteryDrainRate: 1
-  lowBatteryThreshold: 20
-  showFlashlightModel: 1
-  flashlightPositionOffset: {x: 0.3, y: -0.2, z: 0.5}
-  flashlightRotationOffset: {x: -10, y: 0, z: 0}
-  flashlightScale: 1
-  toggleOnSound: {fileID: 0}
-  toggleOffSound: {fileID: 0}
-  batteryLowWarning: {fileID: 0}
-  soundVolume: 0.5

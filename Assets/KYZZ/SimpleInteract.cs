@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class SimpleItemInteract : MonoBehaviour
 {
@@ -50,7 +51,6 @@ public class SimpleItemInteract : MonoBehaviour
         float dist = Vector3.Distance(player.transform.position, transform.position);
 
         // ให้ข้อความหันเข้าหากล้อง
-        // แก้ให้ Text หันหน้าไปหากล้อง ไม่กลับด้าน
         if (text3D != null)
         {
             text3D.transform.LookAt(cam.transform);
@@ -67,26 +67,26 @@ public class SimpleItemInteract : MonoBehaviour
 
     void CollectItem()
     {
+        if (collected) return;
         collected = true;
 
-        // ✅ ลบ text ทิ้งก่อน
+        // 🔸 ปิดข้อความ
         if (text3D != null)
-        {
-            Destroy(text3D.gameObject);
-            text3D = null;
-        }
+            text3D.gameObject.SetActive(false);
 
+        // 🔸 จับภาพ icon ก่อน
+        Sprite iconToUse = itemIcon ?? CaptureItemIconAsSprite(gameObject);
+        Texture2D iconTexture = SpriteToTexture(iconToUse);
+
+        // 🔸 หาคลัง
         RadialInventoryVertical inventory = FindObjectOfType<RadialInventoryVertical>();
         if (inventory != null)
         {
-            Sprite iconToUse = itemIcon ?? CaptureItemIconAsSprite(gameObject);
-            Texture2D iconTexture = SpriteToTexture(iconToUse);
-
-            // ✅ ส่งข้อมูลไปยังคลัง
+            // ✅ เพิ่มเข้าคลังทันที (ถือว่าของเข้าตัวแล้ว)
             inventory.AddItem(gameObject, itemID, iconTexture);
         }
 
-        // ✅ ปิด Physics
+        // 🔸 ปิดฟิสิกส์และ collider เพื่อให้ดูเหมือนเก็บไปแล้ว
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -96,15 +96,19 @@ public class SimpleItemInteract : MonoBehaviour
 
         Collider col = GetComponent<Collider>();
         if (col != null)
-        {
             col.enabled = false;
-        }
 
-        // ✅ ปิด script นี้
-        this.enabled = false;
+        // 🔸 ซ่อนวัตถุในฉาก (เหมือนหายเข้า inventory)
+        gameObject.SetActive(false);
 
-        // ✅ ลบ object จริงออกจากโลก (ของจะไม่ตกพื้นอีก)
-        Destroy(gameObject, 0.05f);
+        // ✅ หน่วงลบจริงออกจากฉาก (เพื่อไม่รบกวน AddItem)
+        StartCoroutine(RemoveAfterDelay());
+    }
+
+    IEnumerator RemoveAfterDelay()
+    {
+        yield return new WaitForSeconds(0.2f); // หน่วงเล็กน้อยให้ AddItem ทำงานเสร็จ
+        Destroy(gameObject);
     }
 
     Texture2D SpriteToTexture(Sprite sprite)
@@ -150,10 +154,9 @@ public class SimpleItemInteract : MonoBehaviour
         tempCam.orthographic = true;
         tempCam.orthographicSize = 0.5f;
 
-        // ✅ ให้กล้องอยู่ด้านหน้าของวัตถุ ในระดับเดียวกัน
-        Vector3 offset = obj.transform.forward * -2f; // ถอยหลังจากด้านหน้า
+        Vector3 offset = obj.transform.forward * -2f;
         tempCam.transform.position = obj.transform.position + offset;
-        tempCam.transform.LookAt(obj.transform.position); // มองไปที่ตัววัตถุ
+        tempCam.transform.LookAt(obj.transform.position);
 
         RenderTexture rt = new RenderTexture(128, 128, 16);
         tempCam.targetTexture = rt;
