@@ -353,46 +353,89 @@ public class RadialInventoryVertical : MonoBehaviour
     }
 
     // ✅ ฟังก์ชันใหม่: ทำให้ item ที่ drop แล้วสามารถเก็บได้อีก
-    void MakePickupable(GameObject item, string itemName)
+    private void MakePickupable(GameObject item, string itemName)
     {
-        if (item.tag != "Pickup")
-            item.tag = "Pickup";
+        if (item == null) return;
 
-        var interact = item.GetComponent<SimpleItemInteract>();
-        if (interact == null)
+        // แก้ tag
+        if (item.tag != "Pickup") item.tag = "Pickup";
+
+        // เปิด object
+        item.SetActive(true);
+
+        // รีเซ็ต/ลบ SimpleItemInteract ถ้ามี เพื่อให้ instance ใหม่สะอาด
+        var oldInteract = item.GetComponent<SimpleItemInteract>();
+        if (oldInteract != null)
         {
-            interact = item.AddComponent<SimpleItemInteract>();
+            Destroy(oldInteract);
         }
 
+        // เพิ่ม instance ใหม่ของ SimpleItemInteract (จะเรียก Start ของมัน)
+        var interact = item.AddComponent<SimpleItemInteract>();
         interact.itemID = itemName;
+        interact.interactKey = KeyCode.E; // ถ้าต้องการ override default
         interact.enabled = true;
 
-        // ✅ แก้ตรงนี้ - ตั้งค่า Rigidbody ให้ถูกต้อง
-        var rb = item.GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.isKinematic = false; // ✅ ต้องปิด kinematic ให้แรงโน้มถ่วงทำงาน
-            rb.useGravity = true; // ✅ เปิดแรงโน้มถ่วง
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-
-            // ล้างความเร็วเดิมทิ้ง
-            try
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-            }
-            catch { }
-        }
-
+        // เปิด collider และ rigidbody
         var col = item.GetComponent<Collider>();
         if (col != null)
         {
             col.enabled = true;
-            col.isTrigger = false; // ✅ ต้องไม่เป็น trigger
+            col.isTrigger = false;
         }
 
-        Debug.Log($"🟢 '{itemName}' is now pickupable again!");
+        var rb = item.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            try
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            catch
+            {
+                try { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; } catch { }
+            }
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        }
+        else
+        {
+            // ถ้าไม่มี Rigidbody ก็เพิ่ม (เพื่อให้ physics ทำงานตอน drop)
+            rb = item.AddComponent<Rigidbody>();
+            rb.mass = 1f;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        }
+
+        // คืนไอคอนจาก slot ถ้ามี
+        foreach (var slot in slots)
+        {
+            if (!slot.isEmpty && slot.itemName == itemName && slot.iconTexture != null)
+            {
+                Sprite restoredSprite = Sprite.Create(
+                    slot.iconTexture,
+                    new Rect(0, 0, slot.iconTexture.width, slot.iconTexture.height),
+                    new Vector2(0.5f, 0.5f)
+                );
+                interact.itemIcon = restoredSprite;
+                break;
+            }
+        }
+
+        // วางไว้หน้าผู้เล่นเล็กน้อย
+        if (Camera.main != null)
+        {
+            Transform cam = Camera.main.transform;
+            item.transform.position = cam.position + cam.forward * 1.0f + Vector3.down * 0.3f;
+        }
+
+        // รีเซ็ต rotation เล็กน้อยเพื่อกันโมเดลตั้งตรงแปลก ๆ
+        item.transform.rotation = Quaternion.identity;
+
+        Debug.Log($"🟢 '{itemName}' is now pickupable again (MakePickupable)");
     }
+
 
     void OnGUI()
     {
@@ -422,105 +465,146 @@ public class RadialInventoryVertical : MonoBehaviour
 
         GUI.color = Color.white;
     }
-public void AddItem(GameObject item, string name, Texture2D icon = null)
-{
-    // 🔹 หาช่องว่างแรก
-    for (int i = 0; i < slots.Count; i++)
+    public void AddItem(GameObject item, string name, Texture2D icon = null)
     {
-        if (slots[i].isEmpty)
+        // ป้องกัน null
+        if (item == null)
         {
-            // 🔹 ทำสำเนา texture เพื่อป้องกัน bug icon ดำ
-            if (icon != null)
+            Debug.LogWarning("AddItem called with null item. Storing icon/name only.");
+            // หาช่องว่างแล้วเก็บข้อมูลเบื้องต้น (ไม่มีโมเดล)
+            for (int i = 0; i < slots.Count; i++)
             {
-                Texture2D fixedTex = new Texture2D(icon.width, icon.height, TextureFormat.RGBA32, false);
-                fixedTex.SetPixels(icon.GetPixels());
-                fixedTex.Apply();
-                icon = fixedTex;
-            }
-
-            // ===========================
-            // 🧩 เวอร์ชันใหม่ — ของจะ "เข้ามือก่อนหาย"
-            // ===========================
-
-            // 1️⃣ จับของจริงเข้ามือทันที
-            item.transform.SetParent(handPoint);
-            item.transform.localPosition = Vector3.zero;
-            item.transform.localRotation = Quaternion.Euler(90f, 90f, 90f);
-
-            // ปิดฟิสิกส์ระหว่างถือ
-            var rbReal = item.GetComponent<Rigidbody>();
-            if (rbReal != null)
-            {
-                rbReal.isKinematic = true;
-                rbReal.useGravity = false;
-                try
+                if (slots[i].isEmpty)
                 {
-                    rbReal.linearVelocity = Vector3.zero;
-                    rbReal.angularVelocity = Vector3.zero;
+                    if (icon != null)
+                    {
+                        Texture2D fixedTex = new Texture2D(icon.width, icon.height, TextureFormat.RGBA32, false);
+                        fixedTex.SetPixels(icon.GetPixels());
+                        fixedTex.Apply();
+                        icon = fixedTex;
+                    }
+
+                    slots[i].itemObject = null;
+                    slots[i].itemName = name;
+                    slots[i].iconTexture = icon;
+                    slots[i].isEmpty = false;
+
+                    Debug.Log($"🟡 Stored icon-only item '{name}' into slot #{i + 1}");
+
+                    selectedIndex = i;
+                    // ไม่มี object ให้ Equip แต่เรียก ClearHandItem เพื่อความแน่นอน
+                    ClearHandItem();
+                    return;
                 }
-                catch { }
             }
 
-            Collider[] colsReal = item.GetComponents<Collider>();
-            foreach (var c in colsReal)
-                c.enabled = false;
-
-            // 2️⃣ สร้างสำเนาไว้ใน inventory
-            GameObject stored = Instantiate(item);
-            stored.name = item.name + "_INV";
-
-            // ลบ SimpleItemInteract ออกจากสำเนา
-            var interact = stored.GetComponent<SimpleItemInteract>();
-            if (interact != null)
-                Destroy(interact);
-
-            // ปิด physics ของสำเนา
-            var rbStored = stored.GetComponent<Rigidbody>();
-            if (rbStored != null)
-            {
-                rbStored.isKinematic = true;
-                rbStored.useGravity = false;
-                try
-                {
-                    rbStored.linearVelocity = Vector3.zero;
-                    rbStored.angularVelocity = Vector3.zero;
-                }
-                catch { }
-            }
-
-            Collider[] colsStored = stored.GetComponents<Collider>();
-            foreach (var c in colsStored)
-                c.enabled = false;
-
-            // 3️⃣ ของจริงจะค่อยๆ หายหลังเข้ามือแล้ว
-            item.SetActive(true);
-            StartCoroutine(DestroyRealItemAfterDelay(item, 0.25f));
-
-            // 4️⃣ เก็บข้อมูลลงช่อง
-            slots[i].itemObject = stored;
-            slots[i].itemName = name;
-            slots[i].iconTexture = icon;
-            slots[i].isEmpty = false;
-
-            stored.SetActive(false);
-            stored.transform.SetParent(null);
-
-            Debug.Log($"🟢 Added item '{name}' to slot #{i + 1} (entered hand then stored copy)");
-
-            // ✅ ถ้ายังไม่มีของในมือ (selectedIndex == -1) ให้เลือกช่องนี้
-            if (selectedIndex == -1)
-            {
-                selectedIndex = i;
-                EquipSelectedItem();
-            }
-
+            Debug.Log("⚠️ Inventory full! Could not add item: " + name);
             return;
         }
+
+        // หาช่องว่างแรก
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i].isEmpty)
+            {
+                // ทำสำเนา texture เพื่อป้องกัน bug icon ดำ
+                if (icon != null)
+                {
+                    Texture2D fixedTex = new Texture2D(icon.width, icon.height, TextureFormat.RGBA32, false);
+                    fixedTex.SetPixels(icon.GetPixels());
+                    fixedTex.Apply();
+                    icon = fixedTex;
+                }
+
+                // 1) เอาของจริงเข้ามือทันที
+                try
+                {
+                    item.transform.SetParent(handPoint);
+                    item.transform.localPosition = Vector3.zero;
+                    // ให้หมุนเริ่มต้นเป็นแนวนอน (ถ้าต้องการปรับสำหรับบางชิ้น ให้แก้ที่ prefab)
+                    item.transform.localRotation = Quaternion.identity;
+                }
+                catch { /* ป้องกันกรณี parent null */ }
+
+                // ปิด physics ขณะถือ
+                var rbReal = item.GetComponent<Rigidbody>();
+                if (rbReal != null)
+                {
+                    rbReal.isKinematic = true;
+                    rbReal.useGravity = false;
+                    try
+                    {
+                        // compatibility: some Unity versions use velocity, some linearVelocity
+                        rbReal.velocity = Vector3.zero;
+                        rbReal.angularVelocity = Vector3.zero;
+                    }
+                    catch
+                    {
+                        try { rbReal.linearVelocity = Vector3.zero; rbReal.angularVelocity = Vector3.zero; } catch { }
+                    }
+                }
+
+                // ปิด collider ของของจริงขณะถือ
+                Collider[] colsReal = item.GetComponents<Collider>();
+                foreach (var c in colsReal)
+                    c.enabled = false;
+
+                // 2) สร้างสำเนาไว้ใน inventory (สำเนาจะถูกเก็บไว้และปิดอยู่)
+                GameObject stored = Instantiate(item);
+                stored.name = item.name + "_INV";
+
+                // ลบ component SimpleItemInteract บนสำเนา เพื่อไม่ให้สำเนาเป็น pickup object
+                var interactComp = stored.GetComponent<SimpleItemInteract>();
+                if (interactComp != null) Destroy(interactComp);
+
+                // ตั้งสถานะฟิสิกส์ของสำเนาให้ปลอดภัย (ไม่ขยับ)
+                var rbStored = stored.GetComponent<Rigidbody>();
+                if (rbStored != null)
+                {
+                    rbStored.isKinematic = true;
+                    rbStored.useGravity = false;
+                    try
+                    {
+                        rbStored.velocity = Vector3.zero;
+                        rbStored.angularVelocity = Vector3.zero;
+                    }
+                    catch
+                    {
+                        try { rbStored.linearVelocity = Vector3.zero; rbStored.angularVelocity = Vector3.zero; } catch { }
+                    }
+                }
+
+                Collider[] colsStored = stored.GetComponents<Collider>();
+                foreach (var c in colsStored)
+                    c.enabled = false;
+
+                // ปิดสำเนาและแยกออกจาก parent
+                stored.SetActive(false);
+                stored.transform.SetParent(null);
+
+                // 3) เก็บข้อมูลลง slot
+                slots[i].itemObject = stored;
+                slots[i].itemName = name;
+                slots[i].iconTexture = icon;
+                slots[i].isEmpty = false;
+
+                Debug.Log($"🟢 Added item '{name}' to slot #{i + 1} (real -> hand; stored copy saved)");
+
+                // 4) ทำให้ของจริงค่อยๆถูกลบหลังหน่วงสั้น ๆ (เพื่อกัน race condition)
+                StartCoroutine(DestroyRealItemAfterDelay(item, 0.25f));
+
+                // 5) **เลือกช่องใหม่เสมอ** แล้ว equip ให้ชัวร์
+                selectedIndex = i;
+                EquipSelectedItem();
+
+                return;
+            }
+        }
+
+        // ถ้าไม่มีช่องว่าง
+        Debug.Log("⚠️ Inventory full! Could not add item: " + name);
     }
 
-    // 🔹 ถ้าไม่มีช่องว่างเลย
-    Debug.Log("⚠️ Inventory full! Could not add item: " + name);
-}
 
     private IEnumerator DestroyRealItemAfterDelay(GameObject obj, float delay)
     {
