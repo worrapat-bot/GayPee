@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 3
   tags:
   - Enemy
+  - Thing
+  - Desk
   layers:
   - Default
   - TransparentFX
@@ -15,8 +17,8 @@ TagManager:
   - Player
   - Obstacle
   - PP
-  - 
-  - 
+  - Desk
+  - Thing
   - 
   - 
   - 

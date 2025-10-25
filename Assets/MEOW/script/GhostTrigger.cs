@@ -2,7 +2,7 @@
 
 public class GhostTrigger : MonoBehaviour
 {
-    public GhostObject[] ghostObjects;  // วัตถุที่จะทำให้ตก
+    public GhostObject[] ghostObjects; // วัตถุที่จะทำให้ตก
     public string activatingTag = "Player";
     public bool oneShot = true;
 
@@ -20,20 +20,5 @@ public class GhostTrigger : MonoBehaviour
         }
 
         used = true;
-    }
-
-    // สำหรับดู Trigger ใน Scene
-    void OnDrawGizmosSelected()
-    {
-        var col = GetComponent<Collider>();
-        if (col != null)
-        {
-            Gizmos.color = Color.cyan;
-            Gizmos.matrix = transform.localToWorldMatrix;
-            if (col is BoxCollider bc)
-                Gizmos.DrawWireCube(bc.center, bc.size);
-            else if (col is SphereCollider sc)
-                Gizmos.DrawWireSphere(sc.center, sc.radius);
-        }
     }
 }

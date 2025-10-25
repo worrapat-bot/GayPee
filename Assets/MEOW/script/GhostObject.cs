@@ -1,22 +1,20 @@
 ﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Collider))]
 [RequireComponent(typeof(AudioSource))]
 public class GhostObject : MonoBehaviour
 {
-    [Header("Timing")]
-    public float delayBeforeShake = 0.5f; // เวลารอก่อนเริ่มสั่น
-    public float shakeDuration = 0.5f;    // เวลาสั่นก่อนตก
+    [Header("Shake Settings")]
+    public float delayBeforeShake = 0.3f;  // รอก่อนสั่น
+    public float shakeDuration = 0.4f;     // เวลาสั่น
+    public float shakeAmount = 0.05f;      // ความแรงสั่น
 
-    [Header("Shake")]
-    public float shakeAmount = 0.05f;     // ความแรงสั่น
-
-    [Header("Push / Fall")]
-    public float pushForce = 5f;
-    public float torqueForce = 3f;
+    [Header("Fall Settings")]
+    public float pushForce = 3f;           // แรงผลัก
     public Vector3 pushDirection = new Vector3(1, 0, 1);
 
-    [Header("Sound")]
+    [Header("Sound Settings")]
     public AudioClip fallClip;
     [Range(0f, 1f)] public float volume = 1f;
 
@@ -30,6 +28,7 @@ public class GhostObject : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         audioSource = GetComponent<AudioSource>();
         audioSource.playOnAwake = false;
@@ -40,11 +39,9 @@ public class GhostObject : MonoBehaviour
     // เรียกจาก Trigger
     public void Activate()
     {
-        if (!hasFallen)
-        {
-            hasFallen = true;
-            Invoke(nameof(StartShake), delayBeforeShake);
-        }
+        if (hasFallen) return;
+        hasFallen = true;
+        Invoke(nameof(StartShake), delayBeforeShake);
     }
 
     void StartShake()
@@ -65,7 +62,7 @@ public class GhostObject : MonoBehaviour
 
         rb.isKinematic = false;
         rb.AddForce(pushDirection.normalized * pushForce, ForceMode.Impulse);
-        rb.AddTorque(Random.insideUnitSphere * torqueForce, ForceMode.Impulse);
+        rb.AddTorque(Random.insideUnitSphere * pushForce, ForceMode.Impulse);
     }
 
     void OnCollisionEnter(Collision collision)
