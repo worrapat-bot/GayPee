@@ -1,37 +1,57 @@
 using UnityEngine;
 
 /// <summary>
-/// Script นี้มีหน้าที่ 'เปิด' หรือ 'โชว์' GameObject (Panel) ที่กำหนด
-/// เมื่อถูกเรียกใช้จากปุ่ม
+/// Script นี้มีหน้าที่ 'เปิด' หรือ 'โชว์' GameObject (Panel) หลายตัวพร้อมกัน
+/// เมื่อถูกเรียกใช้จากปุ่ม (เช่น OnClick)
 /// </summary>
 public class UIShowPanel : MonoBehaviour
 {
-    [Header("UI Element")]
-    [Tooltip("ลาก GameObject (Panel) ที่คุณต้องการ 'โชว์' มาใส่ที่นี่")]
-    [SerializeField] private GameObject panelToShow;
+    [Header("UI Elements")]
+    [Tooltip("ลาก GameObject (Panel) ทั้งหมดที่ต้องการ 'โชว์' มาใส่ที่นี่")]
+    [SerializeField] private GameObject[] panelsToShow;
 
     void Awake()
     {
-        // ตรวจสอบว่าลาก Panel มาใส่หรือยัง
-        if (panelToShow == null)
+        if (panelsToShow == null || panelsToShow.Length == 0)
         {
-            Debug.LogError("Error: 'Panel To Show' is not assigned on " + gameObject.name);
+            Debug.LogWarning("⚠️ Warning: No panels assigned on " + gameObject.name);
+            return;
         }
-        else
+
+        // ปิดทุก panel ตอนเริ่มเกม
+        foreach (var panel in panelsToShow)
         {
-            // ตั้งค่าเริ่มต้นให้ Panel 'ปิด' (ซ่อน) อยู่
-            panelToShow.SetActive(false);
+            if (panel != null)
+                panel.SetActive(false);
         }
     }
 
     /// <summary>
-    /// ฟังก์ชันสำหรับ 'โชว์' Panel (ใช้ใน OnClick ของปุ่ม)
+    /// ฟังก์ชันสำหรับ 'โชว์' ทุก panel ที่กำหนดไว้
+    /// ใช้ใน OnClick ของปุ่ม
     /// </summary>
-    public void ShowPanel()
+    public void ShowPanels()
     {
-        if (panelToShow != null)
+        if (panelsToShow == null || panelsToShow.Length == 0) return;
+
+        foreach (var panel in panelsToShow)
         {
-            panelToShow.SetActive(true);
+            if (panel != null)
+                panel.SetActive(true);
+        }
+    }
+
+    /// <summary>
+    /// ฟังก์ชันเสริม: ซ่อนทุก panel ได้ด้วย (เผื่อใช้ตอนปิด UI)
+    /// </summary>
+    public void HidePanels()
+    {
+        if (panelsToShow == null || panelsToShow.Length == 0) return;
+
+        foreach (var panel in panelsToShow)
+        {
+            if (panel != null)
+                panel.SetActive(false);
         }
     }
 }

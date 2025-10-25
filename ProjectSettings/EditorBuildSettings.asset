@@ -9,6 +9,12 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
+    path: Assets/KYU/Scene_01/_StartGame.unity
+    guid: a4a49985f58511b478d1cec9c6c60a83
+  - enabled: 1
+    path: Assets/KYU/TEST/LABTEST.unity
+    guid: 838fe8197b44cc84294ef712d75a052a
+  - enabled: 1
     path: Assets/KYU/Scene_01.unity
     guid: ed744644bb4b63342a3225afba056bc4
   - enabled: 1
