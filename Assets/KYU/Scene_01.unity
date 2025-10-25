@@ -1321,7 +1321,11 @@ Transform:
   m_GameObject: {fileID: 838375427}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.9858796, z: -0, w: 0.16745615}
+<<<<<<< HEAD
   m_LocalPosition: {x: 26.88, y: 0.27, z: -15.47}
+=======
+  m_LocalPosition: {x: -6.6, y: 0.27, z: 2.4}
+>>>>>>> parent of fdd96c5 (...)
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1877,6 +1881,53 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+<<<<<<< HEAD
+=======
+--- !u!1 &1477769155 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2803500588940251823, guid: cd0d7762da73aa545b6b2675de7edbec, type: 3}
+  m_PrefabInstance: {fileID: 100271514}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1477769156
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1477769155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3bac9e336b0e654caf16511f12523f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  <moveSpeed>k__BackingField: 3
+  <chaseSpeed>k__BackingField: 7
+  <waitTime>k__BackingField: 2.5
+  <rotationSpeed>k__BackingField: 5
+  <stoppingDistance>k__BackingField: 0.8
+  walkSpeedThreshold: 3
+  jumpscareTriggerName: DoJumpscare
+  fadeToBlackDuration: 2
+  nextSceneName: JumpScareScene
+  <searchAngle>k__BackingField: 45
+  <searchRotationSpeed>k__BackingField: 100
+  <patrolPoints>k__BackingField:
+  - {fileID: 1757231831}
+  - {fileID: 376492634}
+  - {fileID: 1515644351}
+  patrolFootstepSound: {fileID: 0}
+  chaseFootstepSound: {fileID: 0}
+  detectionSound: {fileID: 0}
+  searchSound: {fileID: 0}
+  jumpscareSound: {fileID: 0}
+  chaseBreathingSound: {fileID: 8300000, guid: 5e69b973ff47e07489c9d1f7c4050add, type: 3}
+  footstepAudioSource: {fileID: 0}
+  sfxAudioSource: {fileID: 0}
+  ambientAudioSource: {fileID: 0}
+  footstepVolume: 0.5
+  sfxVolume: 0.8
+  ambientVolume: 0.6
+>>>>>>> parent of fdd96c5 (...)
 --- !u!1 &1515644350
 GameObject:
   m_ObjectHideFlags: 0
