@@ -24,7 +24,7 @@ public class SimpleItemInteract : MonoBehaviour
         {
             GameObject textObj = new GameObject("CollectText");
             textObj.transform.SetParent(transform);
-            textObj.transform.localPosition = new Vector3(0, 1.0f, 0);
+            textObj.transform.localPosition = new Vector3(0, 0.3f, 0);
 
             text3D = textObj.AddComponent<TextMeshPro>();
             text3D.text = "Press E to Collect";
