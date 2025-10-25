@@ -182,7 +182,7 @@ public class RadialInventoryVertical : MonoBehaviour
 #else
             try
             {
-                rb.velocity = Vector3.zero;
+                rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
             catch
@@ -378,7 +378,7 @@ public class RadialInventoryVertical : MonoBehaviour
             // ล้างความเร็วเดิมทิ้ง
             try
             {
-                rb.velocity = Vector3.zero;
+                rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
             catch { }
@@ -490,7 +490,7 @@ public class RadialInventoryVertical : MonoBehaviour
                     // clear velocities if properties exist
                     try
                     {
-                        rbStored.velocity = Vector3.zero;
+                        rbStored.linearVelocity = Vector3.zero;
                         rbStored.angularVelocity = Vector3.zero;
                     }
                     catch { }
