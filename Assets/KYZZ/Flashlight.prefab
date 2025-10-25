@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 4286111628138551354}
   - component: {fileID: 2210108889689569696}
   - component: {fileID: 3883524780987010296}
-  - component: {fileID: 2760850835152929383}
   - component: {fileID: 7363575091996287802}
   - component: {fileID: 7003380298229777853}
+  - component: {fileID: 1294016823411502173}
   m_Layer: 0
   m_Name: Flashlight
   m_TagString: Untagged
@@ -116,53 +116,6 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
---- !u!114 &2760850835152929383
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3484397938998768880}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 29d179b00e89346468b72ccaabd3d0dc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  interactDistance: 3
-  interactKey: 101
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  requireLineOfSight: 1
-  itemIcon: {fileID: 21300000, guid: d601a5c13e88fb04ab4f7e8ad55473f2, type: 3}
-  itemID: Flashlight
-  itemDescription: An item
-  destroyOnCollect: 1
-  collectSound: {fileID: 0}
-  enableFloating: 1
-  floatHeight: 0.2
-  floatSpeed: 1
-  enableRotation: 1
-  rotationSpeed: 45
-  enableGlow: 1
-  glowColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  glowIntensity: 1
-  useCustomText: 0
-  customInteractText: Press E to Collect
-  textHeight: 1
-  textSize: 2
-  textColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  textOutlineColor: {r: 0, g: 0, b: 0, a: 1}
-  textOutlineWidth: 0.2
-  soundVolume: 0.7
-  playSoundOnProximity: 0
-  proximitySound: {fileID: 0}
-  useRaycastCheck: 1
-  showDebugInfo: 0
-  objectsToDisableOnCollect: []
-  onCollectEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &7363575091996287802
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -216,3 +169,35 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 2.0000002, z: 1.0000005}
   m_Center: {x: 0.00000005960464, y: 0, z: -0.00000008940699}
+--- !u!114 &1294016823411502173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3484397938998768880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a71d071f9ec379741970f225986818a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  toggleKey: 102
+  itemID: Flashlight
+  auraIntensity: 2.5
+  auraRange: 15
+  auraColor: {r: 1, g: 0.95, b: 0.8, a: 1}
+  spotAngle: 60
+  innerSpotAngle: 30
+  flickerAmount: 0.05
+  useBattery: 1
+  maxBatteryLife: 300
+  batteryDrainRate: 1
+  lowBatteryThreshold: 20
+  showFlashlightModel: 1
+  flashlightPositionOffset: {x: 0.3, y: -0.2, z: 0.5}
+  flashlightRotationOffset: {x: -10, y: 0, z: 0}
+  flashlightScale: 1
+  toggleOnSound: {fileID: 0}
+  toggleOffSound: {fileID: 0}
+  batteryLowWarning: {fileID: 0}
+  soundVolume: 0.5
