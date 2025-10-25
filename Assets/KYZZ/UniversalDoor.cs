@@ -31,6 +31,7 @@ public class UniversalDoor : MonoBehaviour
     private TextMeshPro text3D;
     private GameObject player;
     private AudioSource audioSource;
+    private bool isUnLocked = false;
 
     void Start()
     {
@@ -123,11 +124,10 @@ public class UniversalDoor : MonoBehaviour
 
     void UnlockAndOpen()
     {
-        isUnlocked = true;
+        isUnLocked = true;
         isOpen = true;
         isMoving = true;
 
-        // ✅ เลือกเสียงตาม Requirement
         AudioClip unlockClip = GetUnlockSound(requirement);
         if (unlockClip != null)
         {
@@ -135,7 +135,6 @@ public class UniversalDoor : MonoBehaviour
             Debug.Log($"🔊 Playing {requirement} sound!");
         }
 
-        // เสียงประตูเปิด
         if (doorOpenSound != null)
         {
             audioSource.PlayOneShot(doorOpenSound, soundVolume * 0.7f);
@@ -149,9 +148,15 @@ public class UniversalDoor : MonoBehaviour
 
         text3D.gameObject.SetActive(false);
 
-        Debug.Log($"🔓 Door unlocked with {requirement}!");
-    }
+        Debug.Log($"🚪 Door unlocked with {requirement}!");
 
+        // 🗑️ Use Quest List InBuilding
+        QuestPaperList questList = FindObjectOfType<QuestPaperList>();
+        if (questList != null)
+        {
+            questList.OnDoorUnlocked(requirement.ToString());
+        }
+    }
     // ✅ ฟังก์ชันเลือกเสียงตามไอเทม
     AudioClip GetUnlockSound(Requirement req)
     {
