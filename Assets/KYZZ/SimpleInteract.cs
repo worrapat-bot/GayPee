@@ -57,7 +57,6 @@ public class SimpleItemInteract : MonoBehaviour
             text3D.transform.Rotate(0, 180f, 0);
         }
 
-
         text3D.gameObject.SetActive(dist < interactDistance);
 
         if (dist < interactDistance && Input.GetKeyDown(interactKey))
@@ -69,7 +68,13 @@ public class SimpleItemInteract : MonoBehaviour
     void CollectItem()
     {
         collected = true;
-        text3D.gameObject.SetActive(false);
+
+        // ✅ ลบ text ทิ้งก่อน
+        if (text3D != null)
+        {
+            Destroy(text3D.gameObject);
+            text3D = null;
+        }
 
         RadialInventoryVertical inventory = FindObjectOfType<RadialInventoryVertical>();
         if (inventory != null)
@@ -144,8 +149,11 @@ public class SimpleItemInteract : MonoBehaviour
         tempCam.clearFlags = CameraClearFlags.SolidColor;
         tempCam.orthographic = true;
         tempCam.orthographicSize = 0.5f;
-        tempCam.transform.position = obj.transform.position + Vector3.back * 2f;
-        tempCam.transform.LookAt(obj.transform);
+
+        // ✅ ให้กล้องอยู่ด้านหน้าของวัตถุ ในระดับเดียวกัน
+        Vector3 offset = obj.transform.forward * -2f; // ถอยหลังจากด้านหน้า
+        tempCam.transform.position = obj.transform.position + offset;
+        tempCam.transform.LookAt(obj.transform.position); // มองไปที่ตัววัตถุ
 
         RenderTexture rt = new RenderTexture(128, 128, 16);
         tempCam.targetTexture = rt;

@@ -64,7 +64,7 @@ public class Flashlight : MonoBehaviour
         lightObj.transform.localPosition = Vector3.zero;
 
         // ✅ หมุนให้แสงชี้ไปด้านหน้า
-        lightObj.transform.localRotation = Quaternion.Euler(-90f,0f,0f);
+        lightObj.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
 
         auraLight = lightObj.AddComponent<Light>();
 
@@ -106,7 +106,7 @@ public class Flashlight : MonoBehaviour
         // ปรับขนาดให้เป็นรูปแท่งไฟฉาย
         flashlightModel.transform.localScale = new Vector3(0.05f, 0.15f, 0.05f) * flashlightScale;
         flashlightModel.transform.localPosition = flashlightPositionOffset;
-        flashlightModel.transform.localRotation = Quaternion.Euler(90f, 0f, 0f) * Quaternion.Euler(flashlightRotationOffset);
+        flashlightModel.transform.localRotation = Quaternion.Euler(90f, 0f, 90f) * Quaternion.Euler(flashlightRotationOffset);
 
         // เปลี่ยนสีให้ดูเป็นไฟฉาย
         Renderer renderer = flashlightModel.GetComponent<Renderer>();

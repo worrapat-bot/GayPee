@@ -167,7 +167,7 @@ public class RadialInventoryVertical : MonoBehaviour
         slot.itemObject.SetActive(true);
         slot.itemObject.transform.SetParent(handPoint);
         slot.itemObject.transform.localPosition = Vector3.zero;
-        slot.itemObject.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        slot.itemObject.transform.localRotation = Quaternion.identity;
 
         Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
         if (rb != null)
@@ -367,11 +367,29 @@ public class RadialInventoryVertical : MonoBehaviour
         interact.itemID = itemName;
         interact.enabled = true;
 
+        // ✅ แก้ตรงนี้ - ตั้งค่า Rigidbody ให้ถูกต้อง
         var rb = item.GetComponent<Rigidbody>();
-        if (rb != null) rb.isKinematic = false;
+        if (rb != null)
+        {
+            rb.isKinematic = false; // ✅ ต้องปิด kinematic ให้แรงโน้มถ่วงทำงาน
+            rb.useGravity = true; // ✅ เปิดแรงโน้มถ่วง
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            // ล้างความเร็วเดิมทิ้ง
+            try
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            catch { }
+        }
 
         var col = item.GetComponent<Collider>();
-        if (col != null) col.enabled = true;
+        if (col != null)
+        {
+            col.enabled = true;
+            col.isTrigger = false; // ✅ ต้องไม่เป็น trigger
+        }
 
         Debug.Log($"🟢 '{itemName}' is now pickupable again!");
     }

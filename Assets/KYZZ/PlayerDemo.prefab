@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 105055600262164505}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.05756263, z: 0, w: 0.998342}
-  m_LocalPosition: {x: 8.08692, y: 1.4000001, z: 14.087472}
+  m_LocalPosition: {x: 8.073, y: 1.4000001, z: 13.964}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -175,6 +175,7 @@ MonoBehaviour:
   throwBarColorStart: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   throwBarColorMax: {r: 1, g: 0, b: 0, a: 1}
   inventory: {fileID: 2384462536043013657}
+  ragdollBodies: []
 --- !u!1 &999315704095582063
 GameObject:
   m_ObjectHideFlags: 0
@@ -230,6 +231,7 @@ MonoBehaviour:
   slotBackground: {fileID: 0}
   handPoint: {fileID: 2154012178871398917}
   dropDistance: 2
+  dropKey: 113
 --- !u!1 &1203685420081395812
 GameObject:
   m_ObjectHideFlags: 0
@@ -332,13 +334,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2975313680241797132}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.3197863, y: 0, z: 0, w: 0.94748974}
-  m_LocalPosition: {x: -0.10099983, y: 0.92999995, z: 0.63}
+  m_LocalRotation: {x: -0.010140271, y: -0, z: -0.000000007858033, w: 0.9999486}
+  m_LocalPosition: {x: -0.10100013, y: 0.51699996, z: 0.08799955}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.39023}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5031466755094222792}
-  m_LocalEulerAnglesHint: {x: 180, y: 180, z: 179.146}
+  m_LocalEulerAnglesHint: {x: 181.162, y: 180, z: 180}
 --- !u!20 &7167200532745169603
 Camera:
   m_ObjectHideFlags: 0
@@ -372,7 +374,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 100
-  field of view: 40.5
+  field of view: 79
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
