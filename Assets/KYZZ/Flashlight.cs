@@ -6,10 +6,14 @@ public class Flashlight : MonoBehaviour
     public KeyCode toggleKey = KeyCode.F;
     public string itemID = "Flashlight";
 
-    [Header("💡 Light Properties - Aura Style")]
+    [Header("💡 Light Properties - Spotlight Style")]
     public float auraIntensity = 2.5f;
-    public float auraRange = 8f;
+    public float auraRange = 15f; // เพิ่มระยะไกลขึ้นสำหรับ spotlight
     public Color auraColor = new Color(1f, 0.95f, 0.8f); // Warm light
+    [Range(30f, 120f)]
+    public float spotAngle = 60f; // มุมกว้างของแสง
+    [Range(0f, 90f)]
+    public float innerSpotAngle = 30f; // มุมแสงด้านใน
     [Range(0f, 2f)]
     public float flickerAmount = 0.05f; // ไฟกระพริบเล็กน้อย
 
@@ -54,17 +58,26 @@ public class Flashlight : MonoBehaviour
         baseIntensity = auraIntensity;
         inventory = FindObjectOfType<RadialInventoryVertical>();
 
-        // สร้าง Point Light สำหรับออร่ารอบตัว
-        GameObject lightObj = new GameObject("FlashlightAura");
+        // สร้าง Spotlight สำหรับไฟฉาย
+        GameObject lightObj = new GameObject("FlashlightSpot");
         lightObj.transform.SetParent(transform);
         lightObj.transform.localPosition = Vector3.zero;
-        lightObj.transform.localRotation = Quaternion.identity;
+
+        // ✅ หมุนให้แสงชี้ไปด้านหน้า
+        lightObj.transform.localRotation = Quaternion.Euler(-90f,0f,0f);
 
         auraLight = lightObj.AddComponent<Light>();
-        auraLight.type = LightType.Point; // เปลี่ยนจาก Spot เป็น Point
+
+        // ✅ เปลี่ยนเป็น Spotlight
+        auraLight.type = LightType.Spot;
         auraLight.intensity = auraIntensity;
         auraLight.range = auraRange;
         auraLight.color = auraColor;
+
+        // ✅ ตั้งค่า Spotlight
+        auraLight.spotAngle = spotAngle;
+        auraLight.innerSpotAngle = innerSpotAngle;
+
         auraLight.shadows = LightShadows.Soft;
         auraLight.renderMode = LightRenderMode.ForcePixel;
         auraLight.enabled = false;
@@ -81,7 +94,7 @@ public class Flashlight : MonoBehaviour
             CreateFlashlightModel();
         }
 
-        Debug.Log("🔦 Flashlight system initialized with aura lighting!");
+        Debug.Log("🔦 Flashlight system initialized with spotlight!");
     }
 
     void CreateFlashlightModel()
@@ -235,7 +248,7 @@ public class Flashlight : MonoBehaviour
             audioSource.PlayOneShot(toggleOnSound, soundVolume);
         }
 
-        Debug.Log("🔦 Flashlight ON - Aura mode");
+        Debug.Log("🔦 Flashlight ON - Spotlight mode");
     }
 
     void TurnOff()

@@ -167,7 +167,7 @@ public class RadialInventoryVertical : MonoBehaviour
         slot.itemObject.SetActive(true);
         slot.itemObject.transform.SetParent(handPoint);
         slot.itemObject.transform.localPosition = Vector3.zero;
-        slot.itemObject.transform.localRotation = Quaternion.identity;
+        slot.itemObject.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
         Rigidbody rb = slot.itemObject.GetComponent<Rigidbody>();
         if (rb != null)

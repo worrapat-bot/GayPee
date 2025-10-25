@@ -44,7 +44,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3484397938998768880}
-  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4300000, guid: 9a3b57f0a1248be419dd9c4d54748512, type: 3}
 --- !u!23 &2210108889689569696
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -68,7 +68,10 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 930adfdfdd9fafd469ffb427a452359d, type: 2}
+  - {fileID: 2100000, guid: bb59d9535c521eb48994e16487f7b2b9, type: 2}
+  - {fileID: 2100000, guid: 140db2315bb006848a12d719229080a3, type: 2}
+  - {fileID: 2100000, guid: 0eb0f996ba805c34c9e5dc4df46deb6b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -127,8 +130,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   interactDistance: 3
   interactKey: 101
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  requireLineOfSight: 1
   itemIcon: {fileID: 21300000, guid: d601a5c13e88fb04ab4f7e8ad55473f2, type: 3}
   itemID: Flashlight
+  itemDescription: An item
+  destroyOnCollect: 1
+  collectSound: {fileID: 0}
+  enableFloating: 1
+  floatHeight: 0.2
+  floatSpeed: 1
+  enableRotation: 1
+  rotationSpeed: 45
+  enableGlow: 1
+  glowColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  glowIntensity: 1
+  useCustomText: 0
+  customInteractText: Press E to Collect
+  textHeight: 1
+  textSize: 2
+  textColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  textOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  textOutlineWidth: 0.2
+  soundVolume: 0.7
+  playSoundOnProximity: 0
+  proximitySound: {fileID: 0}
+  useRaycastCheck: 1
+  showDebugInfo: 0
+  objectsToDisableOnCollect: []
+  onCollectEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &7363575091996287802
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,14 +177,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toggleKey: 102
   itemID: Flashlight
-  lightIntensity: 3
-  lightRange: 15
+  auraIntensity: 2.5
+  auraRange: 15
+  auraColor: {r: 1, g: 0.95, b: 0.8, a: 1}
   spotAngle: 60
-  lightColor: {r: 0.8155041, g: 0, b: 1, a: 1}
+  innerSpotAngle: 30
+  flickerAmount: 0.05
   useBattery: 0
-  batteryLife: 300
+  maxBatteryLife: 300
   batteryDrainRate: 1
-  clickSound: {fileID: 0}
+  lowBatteryThreshold: 20
+  showFlashlightModel: 1
+  flashlightPositionOffset: {x: 0.3, y: -0.2, z: 0.5}
+  flashlightRotationOffset: {x: -10, y: 0, z: 0}
+  flashlightScale: 1
+  toggleOnSound: {fileID: 0}
+  toggleOffSound: {fileID: 0}
+  batteryLowWarning: {fileID: 0}
+  soundVolume: 0.5
 --- !u!65 &7003380298229777853
 BoxCollider:
   m_ObjectHideFlags: 0
