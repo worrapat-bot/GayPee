@@ -23,6 +23,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/POSH/lose.unity
     guid: 37e5eafceb86eab4da3722add6b2a55b
+  - enabled: 1
+    path: Assets/KYZZ/Protection_suite.unity
+    guid: 4159e3aad6ef2354faea145637a6c6fd
+  - enabled: 1
+    path: Assets/KYZZ/LapMenu.unity
+    guid: 30088c47b1f8a2d4a9c3645ba6f98f96
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
