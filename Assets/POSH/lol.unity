@@ -475,7 +475,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   videoPlayer: {fileID: 750598078}
-  nextSceneName: MainMenu
+  nextSceneName: LapMenu
 --- !u!4 &1890888568
 Transform:
   m_ObjectHideFlags: 0
