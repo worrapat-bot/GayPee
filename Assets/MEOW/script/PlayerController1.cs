@@ -1,6 +1,7 @@
 using UnityEngine;
+using System.Collections; // เพิ่มเพื่อให้รองรับ Coroutines หากต้องการใช้ในอนาคต
 
-[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider), typeof(AudioSource))]
 public class PlayerController1 : MonoBehaviour
 {
     [Header("Movement")]
@@ -39,9 +40,21 @@ public class PlayerController1 : MonoBehaviour
     [Header("Inventory Reference")]
     [SerializeField] private RadialInventoryVertical inventory;
 
+    [Header("🆕 Ragdoll Settings")]
+    [SerializeField] private Rigidbody[] ragdollBodies;
+
+    [Header("🔊 Audio Clips")]
+    [SerializeField] private AudioClip walkClip;
+    [SerializeField] private AudioClip runClip;
+    [SerializeField] private AudioClip punchClip;
+    [SerializeField] private AudioClip jumpClip;
+    [SerializeField] private AudioClip landClip;
+
     private Rigidbody rb;
     private CapsuleCollider col;
     private Camera cam;
+    private Animator anim;
+    private AudioSource audioSource;
     private float stamina;
     private float normalHeight;
     private Vector3 camStartPos;
@@ -52,7 +65,13 @@ public class PlayerController1 : MonoBehaviour
     private float rotationX;
     private float throwChargeStart = -1f;
     private bool isChargingThrow = false;
-    static public bool dialog = false;
+    private bool isRagdollActive = false;
+    public static bool dialog = false;
+    private bool wasGrounded = true;
+    private float stepTimer = 0f;
+    
+    // ✅ NEW FIELD: สถานะควบคุมทั้งหมด
+    private bool canControl = true; // เริ่มต้นให้ควบคุมได้
 
     void Awake()
     {
@@ -68,6 +87,9 @@ public class PlayerController1 : MonoBehaviour
         if (cam == null) cam = Camera.main;
         if (cam != null) camStartPos = cam.transform.localPosition;
 
+        anim = GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
+
         stamina = maxStamina;
 
         Cursor.lockState = CursorLockMode.Locked;
@@ -79,14 +101,36 @@ public class PlayerController1 : MonoBehaviour
 
     void Update()
     {
+        // 💡 MODIFIED: ถ้า Ragdoll Active หรือควบคุมไม่ได้ หรืออยู่ใน Dialog ให้จัดการแค่ Mouse Look เพื่อล็อคเมาส์แล้วออก
+        if (isRagdollActive || !canControl || PlayerController.dialog)
+        {
+            HandleMouseLook(); 
+            return;
+        }
+
+        // ❌ โค้ดเดิมจะทำงานเมื่อ canControl เป็น true เท่านั้น
         HandleMouseLook();
         HandleCrouch();
         HandleCombat();
         HandleDropItem();
         UpdateStamina();
         UpdateHeadBob();
+        HandleFootsteps();
+        HandleJumpLandSound();
 
-        if (!PlayerController1.dialog)
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            PlaySound(jumpClip);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = !Cursor.visible;
+        }
+
+        // จัดการ Cursor (ซ้ำกับ logic ใน HandleMouseLook แต่เก็บไว้เพื่อความสมบูรณ์ของโค้ดเดิม)
+        if (!PlayerController.dialog)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -100,15 +144,30 @@ public class PlayerController1 : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!dialog)
+        // 💡 MODIFIED: ถ้า Ragdoll Active หรือควบคุมไม่ได้ หรืออยู่ใน Dialog ให้หยุด Rigidbody ทันที
+        if (isRagdollActive || !canControl || PlayerController.dialog)
         {
-            Move();
+            rb.linearVelocity = Vector3.zero; // หยุดการเคลื่อนที่ Rigidbody ทันที
+            return;
         }
-
+        
+        Move();
     }
 
     void HandleMouseLook()
     {
+        // 💡 MODIFIED: ถ้าควบคุมไม่ได้ ให้จัดการแค่ Cursor Lock
+        if (!canControl)
+        {
+             if (!PlayerController.dialog)
+             {
+                 Cursor.lockState = CursorLockMode.Locked;
+                 Cursor.visible = false;
+             }
+             return; // หยุดการหมุนกล้อง
+        }
+        
+        // ❌ โค้ดหมุนกล้องเดิม
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
@@ -163,13 +222,12 @@ public class PlayerController1 : MonoBehaviour
             {
                 isChargingThrow = true;
                 throwChargeStart = Time.time;
-                Debug.Log("?? Charging throw...");
             }
             else
             {
                 if (Time.time > lastPunch + punchCooldown)
                 {
-                    Debug.Log("?? PUNCH!");
+                    PlaySound(punchClip);
                     lastPunch = Time.time;
                 }
             }
@@ -186,7 +244,6 @@ public class PlayerController1 : MonoBehaviour
             if (inventory != null)
             {
                 inventory.ThrowCurrentItem(throwForce);
-                Debug.Log($"?? Threw with force: {throwForce:F1}");
             }
         }
 
@@ -200,7 +257,6 @@ public class PlayerController1 : MonoBehaviour
             if (inventory != null && inventory.HasItemInHand())
             {
                 inventory.DropCurrentItem();
-                Debug.Log("?? Dropped item");
             }
         }
     }
@@ -213,6 +269,38 @@ public class PlayerController1 : MonoBehaviour
             stamina = Mathf.Max(0, stamina - staminaDrain * Time.deltaTime);
         else
             stamina = Mathf.Min(maxStamina, stamina + staminaRegen * Time.deltaTime);
+    }
+
+    void HandleFootsteps()
+    {
+        if (!IsGrounded()) return;
+
+        float speed = rb.linearVelocity.magnitude;
+        if (speed < 0.3f) return;
+
+        bool running = Input.GetKey(KeyCode.LeftShift) && stamina > 1f && !isCrouching;
+        stepTimer -= Time.deltaTime;
+
+        if (stepTimer <= 0f)
+        {
+            stepTimer = running ? 0.3f : 0.5f;
+            PlaySound(running ? runClip : walkClip);
+        }
+    }
+
+    void HandleJumpLandSound()
+    {
+        bool groundedNow = IsGrounded();
+        if (groundedNow && !wasGrounded)
+        {
+            PlaySound(landClip);
+        }
+        wasGrounded = groundedNow;
+    }
+
+    bool IsGrounded()
+    {
+        return Physics.Raycast(transform.position, Vector3.down, col.bounds.extents.y + 0.1f);
     }
 
     void UpdateHeadBob()
@@ -239,18 +327,24 @@ public class PlayerController1 : MonoBehaviour
         cam.transform.localPosition = Vector3.Lerp(cam.transform.localPosition, targetPos, Time.deltaTime * 10f);
     }
 
+    void PlaySound(AudioClip clip)
+    {
+        if (clip == null || audioSource == null) return;
+        audioSource.pitch = Random.Range(0.95f, 1.05f);
+        audioSource.PlayOneShot(clip);
+    }
+
     public float GetStamina() => stamina / maxStamina;
 
     void OnGUI()
     {
-        // Stamina Bar - ???????????
+        // Stamina Bar
         GUI.color = staminaBarBg;
         GUI.Box(new Rect(10, 10, 200, 20), "");
-
         GUI.color = staminaBarColor;
         GUI.Box(new Rect(10, 10, 200 * GetStamina(), 20), "");
 
-        // Throw Power Bar - ????????
+        // Throw Power Bar
         if (isChargingThrow)
         {
             float chargeTime = Time.time - throwChargeStart;
@@ -259,11 +353,38 @@ public class PlayerController1 : MonoBehaviour
 
             GUI.color = throwBarBg;
             GUI.Box(new Rect(10, 40, 200, 20), "");
-
             GUI.color = Color.Lerp(throwBarColorStart, throwBarColorMax, chargePercent);
             GUI.Box(new Rect(10, 40, 200 * chargePercent, 20), "");
         }
 
+        // Crosshair (.)
         GUI.color = Color.white;
+        GUI.Label(
+            new Rect((Screen.width / 2) - 5, (Screen.height / 2) - 8, 20, 20),
+            "<size=25><b>.</b></size>"
+        );
+    }
+    
+    // ✅ PUBLIC METHOD: เมธอดนี้ถูกเรียกจาก EnemyPatrol เพื่อสั่งหยุดผู้เล่น
+    /// <summary>
+    /// เปิดหรือปิดการควบคุมทั้งหมดของผู้เล่น (การเดิน, การมอง, Combat)
+    /// </summary>
+    public void SetControlEnabled(bool state)
+    {
+        canControl = state;
+        
+        // ถ้าสั่งหยุด (state = false) ให้ตั้ง Rigidbody Velocity เป็นศูนย์ทันที
+        if (!state && rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        
+        // ถ้าสั่งเริ่ม (state = true) ให้ล็อคเมาส์กลับไป
+        if (state)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 }

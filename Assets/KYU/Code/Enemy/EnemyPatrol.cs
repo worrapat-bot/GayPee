@@ -384,4 +384,6 @@ public class EnemyPatrol : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, rotationSpeed * Time.deltaTime);
         }
     }
+    
+    
 }
