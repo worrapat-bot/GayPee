@@ -88,6 +88,7 @@ public class PlayerController : MonoBehaviour
 
         stamina = maxStamina;
 
+        // ✅ ตั้งค่า cursor ตอนเริ่มเกม
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
@@ -99,6 +100,13 @@ public class PlayerController : MonoBehaviour
     {
         if (isRagdollActive) return;
 
+        // ✅ ถ้าอยู่ใน dialog mode (เช่น pause menu) ไม่ให้ควบคุมอะไรเลย
+        if (dialog)
+        {
+            return; // ออกจาก Update เลย
+        }
+
+        // ✅ เล่นเกมปกติ
         HandleMouseLook();
         HandleCrouch();
         HandleCombat();
@@ -112,27 +120,11 @@ public class PlayerController : MonoBehaviour
         {
             PlaySound(jumpClip);
         }
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = !Cursor.visible;
-        }
-
-        if (!PlayerController.dialog)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
     }
 
     void FixedUpdate()
     {
+        // ✅ ถ้าอยู่ใน dialog mode ห้ามขยับ
         if (!dialog)
         {
             Move();
@@ -141,6 +133,9 @@ public class PlayerController : MonoBehaviour
 
     void HandleMouseLook()
     {
+        // ✅ ห้ามหมุนกล้องตอนเปิด pause menu
+        if (dialog) return;
+
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
@@ -311,6 +306,9 @@ public class PlayerController : MonoBehaviour
 
     void OnGUI()
     {
+        // ✅ ซ่อน UI ถ้าอยู่ใน dialog mode
+        if (dialog) return;
+
         // Stamina Bar
         GUI.color = staminaBarBg;
         GUI.Box(new Rect(10, 10, 200, 20), "");
