@@ -14,11 +14,16 @@ public class UniversalDoor : MonoBehaviour
     public KeyCode interactKey = KeyCode.F;
     public float interactDistance = 3f;
 
+    [Header("🎯 Enable Objects When Opened")]
+    public bool enableObjectsOnOpen = false; // เปิดใช้งานฟีเจอร์นี้
+    public GameObject[] objectsToEnable; // อาร์เรย์ของวัตถุที่จะเปิด
+    public float enableDelay = 0f; // ดีเลย์ก่อนเปิดการใช้งาน
+
     [Header("🔊 Sound Settings")]
-    public AudioClip crowbarSound; // ✅ เสียง Crowbar
-    public AudioClip keySound; // ✅ เสียง Key
-    public AudioClip magicStickSound; // ✅ เสียงแท่งมหัศจรรย์
-    public AudioClip doorOpenSound; // เสียงประตูเปิด (ทุกประเภท)
+    public AudioClip crowbarSound;
+    public AudioClip keySound;
+    public AudioClip magicStickSound;
+    public AudioClip doorOpenSound;
     [Range(0f, 1f)]
     public float soundVolume = 0.8f;
 
@@ -31,7 +36,6 @@ public class UniversalDoor : MonoBehaviour
     private TextMeshPro text3D;
     private GameObject player;
     private AudioSource audioSource;
-    private bool isUnLocked = false;
 
     void Start()
     {
@@ -68,7 +72,7 @@ public class UniversalDoor : MonoBehaviour
 
         text3D.gameObject.SetActive(dist < interactDistance && !isUnlocked);
 
-        Vector3 offset = -transform.forward * 0.8f;
+        Vector3 offset = -transform.forward * 0.8f + Vector3.up * 1.4f;
         text3D.transform.position = transform.position + offset;
 
         if (dist < interactDistance && Input.GetKeyDown(interactKey))
@@ -81,7 +85,15 @@ public class UniversalDoor : MonoBehaviour
             Quaternion targetRot = isOpen ? openRot : closedRot;
             doorPivot.localRotation = Quaternion.Lerp(doorPivot.localRotation, targetRot, Time.deltaTime * openSpeed);
             if (Quaternion.Angle(doorPivot.localRotation, targetRot) < 0.5f)
+            {
                 isMoving = false;
+
+                // ✨ เมื่อประตูเปิดสมบูรณ์
+                if (isOpen && enableObjectsOnOpen)
+                {
+                    StartCoroutine(EnableObjectsDelayed());
+                }
+            }
         }
     }
 
@@ -93,7 +105,11 @@ public class UniversalDoor : MonoBehaviour
             return;
         }
 
-        if (isUnlocked) return;
+        if (isUnlocked)
+        {
+            ToggleDoor();
+            return;
+        }
 
         if (!isOpen)
         {
@@ -124,7 +140,7 @@ public class UniversalDoor : MonoBehaviour
 
     void UnlockAndOpen()
     {
-        isUnLocked = true;
+        isUnlocked = true;
         isOpen = true;
         isMoving = true;
 
@@ -150,14 +166,19 @@ public class UniversalDoor : MonoBehaviour
 
         Debug.Log($"🚪 Door unlocked with {requirement}!");
 
-        // 🗑️ Use Quest List InBuilding
         QuestPaperList questList = FindObjectOfType<QuestPaperList>();
         if (questList != null)
         {
             questList.OnDoorUnlocked(requirement.ToString());
         }
+
+        // ✨ Enable วัตถุทันทีเมื่อกด F
+        if (enableObjectsOnOpen)
+        {
+            StartCoroutine(EnableObjectsDelayed());
+        }
     }
-    // ✅ ฟังก์ชันเลือกเสียงตามไอเทม
+
     AudioClip GetUnlockSound(Requirement req)
     {
         switch (req)
@@ -183,6 +204,34 @@ public class UniversalDoor : MonoBehaviour
         {
             audioSource.PlayOneShot(doorOpenSound, soundVolume * 0.5f);
         }
+    }
+
+    // ✨ ฟังก์ชันเปิดการใช้งานวัตถุ
+    IEnumerator EnableObjectsDelayed()
+    {
+        if (enableDelay > 0)
+        {
+            yield return new WaitForSeconds(enableDelay);
+        }
+
+        if (objectsToEnable == null || objectsToEnable.Length == 0)
+        {
+            Debug.LogWarning("⚠️ No objects to enable!");
+            yield break;
+        }
+
+        int enabledCount = 0;
+        foreach (GameObject obj in objectsToEnable)
+        {
+            if (obj != null)
+            {
+                obj.SetActive(true);
+                Debug.Log($"✅ Enabled: {obj.name}");
+                enabledCount++;
+            }
+        }
+
+        Debug.Log($"🎯 Total objects enabled: {enabledCount}");
     }
 
     void ShowFloatingText(string message)
