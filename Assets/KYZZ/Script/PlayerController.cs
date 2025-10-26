@@ -30,7 +30,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float maxLookAngle = 80f;
 
     [Header("UI Settings")]
-    [SerializeField] private Color staminaBarBg = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+    [SerializeField] private Color staminaBarBg = new Color(1f, 1f, 0f, 0.8f);
     [SerializeField] private Color staminaBarColor = new Color(0.3f, 0.9f, 0.3f, 1f);
     [SerializeField] private Color throwBarBg = new Color(0.2f, 0.2f, 0.2f, 0.8f);
     [SerializeField] private Color throwBarColorStart = Color.yellow;
