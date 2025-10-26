@@ -1,24 +1,49 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
-public class SceneButton : MonoBehaviour
+public class SceneTriggerLoader : MonoBehaviour
 {
-    public string sceneName;          // ชื่อ Scene ที่จะไป
-    public AudioSource audioSource;   // AudioSource ที่จะเล่นเสียง
-    public AudioClip clickSound;      // เสียงตอนกด
+    [Header("Setting")]
+    public string sceneToLoad = "NextMap"; // ชื่อซีนที่จะย้ายไป
+    public string loadingSceneName = "LoadingScene"; // ซีนโหลด
 
-    public void OnButtonClick()
+    [Header("Interact")]
+    public KeyCode interactKey = KeyCode.E; // ปุ่มกด
+    public float interactDistance = 3f;     // ระยะที่กดได้
+    public Transform player;                // ตัวผู้เล่น
+
+    [Header("Sound")]
+    public AudioSource audioSource;
+    public AudioClip interactSound;
+
+    private bool isInRange = false;
+
+    void Update()
     {
-        // เล่นเสียงคลิก
-        if (audioSource != null && clickSound != null)
-            audioSource.PlayOneShot(clickSound);
+        if (player == null) return;
 
-        // เรียกฟังก์ชันเปลี่ยน Scene หลังเสียงเล่นนิดหน่อย
-        Invoke(nameof(ChangeScene), 0.5f);
+        // ตรวจระยะห่าง
+        float distance = Vector3.Distance(transform.position, player.position);
+        isInRange = distance <= interactDistance;
+
+        // ถ้าผู้เล่นอยู่ใกล้ และกดปุ่ม
+        if (isInRange && Input.GetKeyDown(interactKey))
+        {
+            StartCoroutine(PlaySoundAndLoad());
+        }
     }
 
-    void ChangeScene()
+    private System.Collections.IEnumerator PlaySoundAndLoad()
     {
-        SceneManager.LoadScene(sceneName);
+        if (audioSource && interactSound)
+        {
+            audioSource.PlayOneShot(interactSound);
+            yield return new WaitForSeconds(interactSound.length); // รอเสียงจบก่อนโหลด
+        }
+
+        // ส่งข้อมูลชื่อซีนที่จะโหลดไปยังหน้าซีนโหลด
+        PlayerPrefs.SetString("NextSceneToLoad", sceneToLoad);
+        SceneManager.LoadScene(loadingSceneName);
     }
 }
