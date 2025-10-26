@@ -120,12 +120,15 @@ public class MenuController : MonoBehaviour
     {
         PlayClick();
 
-        // 🔜 ภายหลังจะใส่ระบบ Save ที่นี่
-        Debug.Log("💾 Game Saved!");
+        // ✅ เซฟเกม
+        QuickSaveSystem.SaveGame();
 
         // ✅ Save เสร็จแล้ว กลับไปหน้า Pause Menu
         if (savePanel) savePanel.SetActive(false);
         if (pausePanel) pausePanel.SetActive(true);
+
+        // ✅ บอก MainMenu ให้อัพเดทปุ่ม Continue (ถ้ากลับไปเมนูแล้ว)
+        Debug.Log("💾 Game saved successfully!");
     }
 
     void OpenSavePanel()

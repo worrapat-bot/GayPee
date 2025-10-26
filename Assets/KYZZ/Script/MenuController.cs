@@ -3,17 +3,24 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class MainMenuController : MonoBehaviour
 {
     [Header("📋 Menu Panels")]
     public GameObject mainMenuPanel;
+    public GameObject startSubMenuPanel; // ✅ เมนูย่อย New Game / Continue
     public GameObject settingsPanel;
 
     [Header("🎮 Main Menu Buttons")]
     public Button startButton;
     public Button settingsButton;
     public Button exitButton;
+
+    [Header("🎮 Start SubMenu Buttons")]
+    public Button newGameButton;
+    public Button continueButton;
+    public Button backFromStartButton;
 
     [Header("⚙️ Settings Buttons")]
     public Button backButton;
@@ -27,65 +34,145 @@ public class MainMenuController : MonoBehaviour
     public AudioSource menuMusicSource;
     public AudioClip buttonClickSound;
     public AudioClip buttonHoverSound;
+    public AudioClip errorSound; // เสียงตอนกด Continue แต่ไม่มีเซฟ
 
     [Header("👻 Horror Effects")]
     public float buttonHoverScale = 1.1f;
     public float buttonScaleSpeed = 10f;
     public Color normalTextColor = new Color(0.8f, 0.8f, 0.8f, 1f);
-    public Color hoverTextColor = new Color(1f, 0.2f, 0.2f, 1f); // แดงเลือด
+    public Color hoverTextColor = new Color(1f, 0.2f, 0.2f, 1f);
+    public Color disabledTextColor = new Color(0.3f, 0.3f, 0.3f, 0.5f); // ✅ สีเทาสำหรับปุ่มปิด
     public bool enableGlitchEffect = true;
     public bool enableShakeEffect = true;
 
     void Start()
     {
-        ShowMainMenu();
+        ShowMain();
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        // Main Menu Buttons
         if (startButton != null)
         {
-            startButton.onClick.AddListener(OnStartGame);
+            startButton.onClick.AddListener(OpenStartSubMenu);
             AddHoverEffects(startButton);
         }
 
         if (settingsButton != null)
         {
-            settingsButton.onClick.AddListener(OnOpenSettings);
+            settingsButton.onClick.AddListener(OpenSettings);
             AddHoverEffects(settingsButton);
         }
 
         if (exitButton != null)
         {
-            exitButton.onClick.AddListener(OnExitGame);
+            exitButton.onClick.AddListener(ExitGame);
             AddHoverEffects(exitButton);
         }
 
+        // Start SubMenu Buttons
+        if (newGameButton != null)
+        {
+            newGameButton.onClick.AddListener(StartNewGame);
+            AddHoverEffects(newGameButton);
+        }
+
+        if (continueButton != null)
+        {
+            continueButton.onClick.AddListener(ContinueGame);
+            AddHoverEffects(continueButton);
+        }
+
+        if (backFromStartButton != null)
+        {
+            backFromStartButton.onClick.AddListener(BackToMain);
+            AddHoverEffects(backFromStartButton);
+        }
+
+        // Settings Button
         if (backButton != null)
         {
-            backButton.onClick.AddListener(OnBackToMenu);
+            backButton.onClick.AddListener(BackToMainFromSettings);
             AddHoverEffects(backButton);
         }
 
         SetupSettings();
     }
 
-    void ShowMainMenu()
+    void ShowMain()
     {
-        // รีเซ็ตปุ่มทั้งหมดก่อนเปลี่ยน Panel
         ResetAllButtons();
 
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+        if (startSubMenuPanel != null) startSubMenuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
     }
 
-    void OnStartGame()
+    void OpenStartSubMenu()
     {
         PlayButtonClick();
-        Debug.Log("🎮 Starting Game...");
+        ResetAllButtons();
+
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (startSubMenuPanel != null) startSubMenuPanel.SetActive(true);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        // ✅ เช็คว่ามีเซฟหรือไม่
+        UpdateContinueButton();
+    }
+
+    void UpdateContinueButton()
+    {
+        bool hasSave = QuickSaveSystem.HasSaveData();
+
+        Debug.Log($"🔍 Checking save data: {hasSave}"); // ✅ ดู log
+
+        if (continueButton != null)
+        {
+            TextMeshProUGUI buttonText = continueButton.GetComponentInChildren<TextMeshProUGUI>();
+            HorrorButtonEffect effect = continueButton.GetComponent<HorrorButtonEffect>();
+
+            if (hasSave)
+            {
+                // ✅ มีเซฟ → เปิดใช้งานปกติ
+                continueButton.interactable = true;
+                if (buttonText != null)
+                {
+                    buttonText.color = normalTextColor;
+                }
+                if (effect != null)
+                {
+                    effect.isDisabled = false;
+                }
+                Debug.Log("✅ Continue button ENABLED");
+            }
+            else
+            {
+                // ❌ ไม่มีเซฟ → ปิดใช้งาน (สีเทา)
+                continueButton.interactable = false;
+                if (buttonText != null)
+                {
+                    buttonText.color = disabledTextColor;
+                }
+                if (effect != null)
+                {
+                    effect.isDisabled = true;
+                }
+                Debug.Log("❌ Continue button DISABLED");
+            }
+        }
+    }
+
+    void StartNewGame()
+    {
+        PlayButtonClick();
+        Debug.Log("🎮 Starting New Game...");
 
         if (!string.IsNullOrEmpty(gameSceneName))
         {
+            // ✅ ลบเซฟเก่าก่อนเริ่มเกมใหม่
+            QuickSaveSystem.DeleteSave();
             SceneManager.LoadScene(gameSceneName);
         }
         else
@@ -94,18 +181,40 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
-    void OnOpenSettings()
+    void ContinueGame()
+    {
+        if (!QuickSaveSystem.HasSaveData())
+        {
+            // ❌ ไม่มีเซฟ → สั่นปุ่ม + แฟลชสีแดง
+            PlayErrorSound();
+            StartCoroutine(ShakeButton(continueButton));
+            StartCoroutine(FlashRedText(continueButton)); // ✅ เพิ่มแฟลชสีแดง
+            return;
+        }
+
+        // ✅ มีเซฟ → โหลดเกม
+        PlayButtonClick();
+        Debug.Log("📂 Loading saved game...");
+        QuickSaveSystem.LoadGame();
+    }
+
+    void BackToMain()
     {
         PlayButtonClick();
+        ShowMain();
+    }
 
-        // รีเซ็ตปุ่มทั้งหมดก่อนเปลี่ยน Panel
+    void OpenSettings()
+    {
+        PlayButtonClick();
         ResetAllButtons();
 
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (startSubMenuPanel != null) startSubMenuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(true);
     }
 
-    void OnExitGame()
+    void ExitGame()
     {
         PlayButtonClick();
         Debug.Log("👋 Exiting Game...");
@@ -113,7 +222,7 @@ public class MainMenuController : MonoBehaviour
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
-            Application.Quit();
+        Application.Quit();
 #endif
     }
 
@@ -145,11 +254,10 @@ public class MainMenuController : MonoBehaviour
         PlayerPrefs.SetInt("Fullscreen", isFullscreen ? 1 : 0);
     }
 
-    void OnBackToMenu()
+    void BackToMainFromSettings()
     {
         PlayButtonClick();
 
-        // รีเซ็ตปุ่ม Back ก่อนกลับ Main Menu
         if (backButton != null)
         {
             HorrorButtonEffect effect = backButton.GetComponent<HorrorButtonEffect>();
@@ -159,13 +267,15 @@ public class MainMenuController : MonoBehaviour
             }
         }
 
-        ShowMainMenu();
+        ShowMain();
     }
 
-    // รีเซ็ตปุ่มทั้งหมด
     void ResetAllButtons()
     {
-        Button[] allButtons = new Button[] { startButton, settingsButton, exitButton, backButton };
+        Button[] allButtons = new Button[] {
+            startButton, settingsButton, exitButton, backButton,
+            newGameButton, continueButton, backFromStartButton
+        };
 
         foreach (Button btn in allButtons)
         {
@@ -196,6 +306,66 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
+    void PlayErrorSound()
+    {
+        if (errorSound != null && menuMusicSource != null)
+        {
+            menuMusicSource.PlayOneShot(errorSound, 0.5f);
+        }
+    }
+
+    // ✅ สั่นปุ่มตอนกดแต่ไม่มีเซฟ (แรงขึ้น!)
+    IEnumerator ShakeButton(Button button)
+    {
+        if (button == null) yield break;
+
+        RectTransform rect = button.GetComponent<RectTransform>();
+        Vector3 originalPos = rect.localPosition;
+        float duration = 0.5f;
+        float elapsed = 0f;
+        float shakeIntensity = 15f; // ✅ ความแรงการสั่น
+
+        while (elapsed < duration)
+        {
+            // สั่นแบบ sine wave (ดูนุ่มนวลกว่า)
+            float progress = elapsed / duration;
+            float strength = shakeIntensity * (1f - progress); // ค่อยๆ ลดลง
+
+            float x = Mathf.Sin(elapsed * 50f) * strength;
+            float y = Mathf.Cos(elapsed * 50f) * strength;
+
+            rect.localPosition = originalPos + new Vector3(x, y, 0);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        rect.localPosition = originalPos;
+    }
+
+    // ✅ แฝลชสีแดงตอนกดแต่ไม่มีเซฟ
+    IEnumerator FlashRedText(Button button)
+    {
+        if (button == null) yield break;
+
+        TextMeshProUGUI text = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (text == null) yield break;
+
+        Color originalColor = text.color;
+        float duration = 0.5f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            // กระพริบสีแดง-เทา
+            float t = Mathf.PingPong(elapsed * 10f, 1f);
+            text.color = Color.Lerp(disabledTextColor, Color.red, t);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        text.color = originalColor;
+    }
 
     // ==================== 👻 HORROR HOVER EFFECTS ====================
     void AddHoverEffects(Button button)
@@ -206,19 +376,16 @@ public class MainMenuController : MonoBehaviour
         if (trigger == null)
             trigger = button.gameObject.AddComponent<EventTrigger>();
 
-        // Pointer Enter (เมื่อเมาส์เข้า)
         EventTrigger.Entry entryEnter = new EventTrigger.Entry();
         entryEnter.eventID = EventTriggerType.PointerEnter;
-        entryEnter.callback.AddListener((data) => { OnButtonHoverEnter(button); });
+        entryEnter.callback.AddListener((data) => { ButtonHoverEnter(button); });
         trigger.triggers.Add(entryEnter);
 
-        // Pointer Exit (เมื่อเมาส์ออก)
         EventTrigger.Entry entryExit = new EventTrigger.Entry();
         entryExit.eventID = EventTriggerType.PointerExit;
-        entryExit.callback.AddListener((data) => { OnButtonHoverExit(button); });
+        entryExit.callback.AddListener((data) => { ButtonHoverExit(button); });
         trigger.triggers.Add(entryExit);
 
-        // เพิ่ม Component สำหรับ Animation
         HorrorButtonEffect effect = button.gameObject.GetComponent<HorrorButtonEffect>();
         if (effect == null)
             effect = button.gameObject.AddComponent<HorrorButtonEffect>();
@@ -226,18 +393,23 @@ public class MainMenuController : MonoBehaviour
         effect.Initialize(this);
     }
 
-    void OnButtonHoverEnter(Button button)
+    void ButtonHoverEnter(Button button)
     {
+        HorrorButtonEffect effect = button.GetComponent<HorrorButtonEffect>();
+        if (effect != null && effect.isDisabled)
+        {
+            return; // ✅ ถ้าปุ่มปิดใช้งาน ไม่เล่นเสียง
+        }
+
         PlayButtonHover();
 
-        HorrorButtonEffect effect = button.GetComponent<HorrorButtonEffect>();
         if (effect != null)
         {
             effect.OnHoverEnter();
         }
     }
 
-    void OnButtonHoverExit(Button button)
+    void ButtonHoverExit(Button button)
     {
         HorrorButtonEffect effect = button.GetComponent<HorrorButtonEffect>();
         if (effect != null)
@@ -259,6 +431,8 @@ public class HorrorButtonEffect : MonoBehaviour
     private float glitchTimer = 0f;
     private float shakeTimer = 0f;
 
+    public bool isDisabled = false; // ✅ บอกว่าปุ่มปิดใช้งานหรือไม่
+
     public void Initialize(MainMenuController controller)
     {
         menuController = controller;
@@ -275,6 +449,7 @@ public class HorrorButtonEffect : MonoBehaviour
 
     public void OnHoverEnter()
     {
+        if (isDisabled) return; // ✅ ถ้าปิดใช้งาน ไม่ Hover
         isHovering = true;
     }
 
@@ -288,14 +463,13 @@ public class HorrorButtonEffect : MonoBehaviour
     {
         isHovering = false;
 
-        // รีเซ็ตกลับสู่สภาพเดิม
         if (rectTransform != null)
         {
             rectTransform.localScale = originalScale;
             rectTransform.localPosition = originalPosition;
         }
 
-        if (buttonText != null)
+        if (buttonText != null && !isDisabled)
         {
             buttonText.color = menuController.normalTextColor;
             buttonText.alpha = 1f;
@@ -309,9 +483,9 @@ public class HorrorButtonEffect : MonoBehaviour
     {
         if (menuController == null || rectTransform == null) return;
 
-        if (isHovering)
+        if (isHovering && !isDisabled)
         {
-            // 1. ขยายขนาดปุ่ม (Smooth Scale)
+            // 1. ขยายขนาดปุ่ม
             Vector3 targetScale = originalScale * menuController.buttonHoverScale;
             rectTransform.localScale = Vector3.Lerp(
                 rectTransform.localScale,
@@ -329,7 +503,7 @@ public class HorrorButtonEffect : MonoBehaviour
                 );
             }
 
-            // 3. Glitch Effect (กระพริบแบบสุ่ม)
+            // 3. Glitch Effect
             if (menuController.enableGlitchEffect)
             {
                 glitchTimer += Time.deltaTime;
@@ -337,14 +511,13 @@ public class HorrorButtonEffect : MonoBehaviour
                 {
                     if (buttonText != null)
                     {
-                        // สุ่มซ่อน-แสดงตัวอักษร
                         buttonText.alpha = Random.Range(0.7f, 1f);
                     }
                     glitchTimer = 0f;
                 }
             }
 
-            // 4. Shake Effect (สั่นเล็กน้อย)
+            // 4. Shake Effect
             if (menuController.enableShakeEffect)
             {
                 shakeTimer += Time.deltaTime * 20f;
@@ -355,51 +528,10 @@ public class HorrorButtonEffect : MonoBehaviour
         }
         else
         {
-            // รีเซ็ต Alpha เมื่อไม่ Hover
-            if (buttonText != null && buttonText.alpha < 1f)
+            if (buttonText != null && buttonText.alpha < 1f && !isDisabled)
             {
                 buttonText.alpha = Mathf.Lerp(buttonText.alpha, 1f, Time.deltaTime * 5f);
             }
         }
     }
 }
-
-/* 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 คำแนะนำการใช้งาน (ฟ้อนสไตล์สยองขวัญ)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✨ ลูกเล่น Horror ที่เพิ่มเข้ามา:
-1. 🔴 เปลี่ยนสีตัวอักษรเป็นแดงเลือดตอน Hover
-2. 📏 ขยายขนาดปุ่มแบบ Smooth
-3. ⚡ Glitch Effect - กระพริบแบบสุ่ม (ซ่อน-แสดง)
-4. 💥 Shake Effect - สั่นเล็กน้อย
-5. 🎵 เสียงประกอบ Hover และ Click
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-⚙️ ปรับแต่งได้ใน Inspector:
-- Button Hover Scale: ขนาดขยาย (1.1 = 110%)
-- Button Scale Speed: ความเร็วการขยาย
-- Normal Text Color: สีปกติ (เทา)
-- Hover Text Color: สีตอน Hover (แดงเลือด)
-- Enable Glitch Effect: เปิด/ปิด Glitch
-- Enable Shake Effect: เปิด/ปิด Shake
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🎨 แนะนำฟ้อนต์สยองขวัญ:
-- "Creepster" (Google Fonts)
-- "Nosifer"
-- "Butcherman"
-- หรือใช้ Font มีเลือดหยด
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔊 แนะนำเสียงประกอบ:
-- Button Click: เสียงกระดูกหัก, ประตูเอี้ยด
-- Button Hover: เสียงกระซิบ, ลมพัด
-- Background Music: เสียงเปียโน บรรยากาศหลอน
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-*/

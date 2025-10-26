@@ -409,49 +409,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9360e16eefd26744b8b58bc7ed8bc888, type: 3}
---- !u!1 &95371449 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 105055600262164505, guid: 6fe2d3a1b1cacef47a20ab9f05de1bc1, type: 3}
-  m_PrefabInstance: {fileID: 728126640}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &95371458
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 95371449}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ce7a8f69cb436e9458d3041c049be8dc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  walkSpeed: 5
-  runSpeed: 8
-  crouchSpeed: 2.5
-  maxStamina: 100
-  staminaDrain: 20
-  staminaRegen: 15
-  punchCooldown: 0.5
-  minThrowForce: 5
-  maxThrowForce: 20
-  maxChargeTime: 2
-  bobSpeed: 10
-  bobAmount: 0.05
-  mouseSensitivity: 2
-  maxLookAngle: 80
-  staminaBarBg: {r: 0.2, g: 0.2, b: 0.2, a: 0.8}
-  staminaBarColor: {r: 0.3, g: 0.9, b: 0.3, a: 1}
-  throwBarBg: {r: 0.2, g: 0.2, b: 0.2, a: 0.8}
-  throwBarColorStart: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  throwBarColorMax: {r: 1, g: 0, b: 0, a: 1}
-  inventory: {fileID: 0}
-  ragdollBodies: []
-  walkClip: {fileID: 0}
-  runClip: {fileID: 0}
-  punchClip: {fileID: 0}
-  jumpClip: {fileID: 0}
-  landClip: {fileID: 0}
 --- !u!1 &170076733
 GameObject:
   m_ObjectHideFlags: 0
@@ -759,7 +716,7 @@ MonoBehaviour:
   clickSound: {fileID: 0}
   hoverScale: 1.15
   animSpeed: 10
-  menuSceneName: LabMenu
+  menuSceneName: LapMenu
 --- !u!1001 &465125424
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1125,10 +1082,10 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5031466755094222792, guid: 6fe2d3a1b1cacef47a20ab9f05de1bc1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 340038428}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 105055600262164505, guid: 6fe2d3a1b1cacef47a20ab9f05de1bc1, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 5031466755094222792, guid: 6fe2d3a1b1cacef47a20ab9f05de1bc1, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 95371458}
+      addedObject: {fileID: 1657834115}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6fe2d3a1b1cacef47a20ab9f05de1bc1, type: 3}
 --- !u!4 &728126641 stripped
 Transform:
@@ -2825,6 +2782,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1622798355}
   m_CullTransparentMesh: 1
+--- !u!1 &1657834114
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1657834115}
+  - component: {fileID: 1657834116}
+  m_Layer: 0
+  m_Name: SavegameSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1657834115
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1657834114}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 728126641}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1657834116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1657834114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50879d6f402e14c4eafd6da24d3362f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1670451196
 GameObject:
   m_ObjectHideFlags: 0
