@@ -2,47 +2,50 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.AI;
-using UnityEngine.SceneManagement; 
+using UnityEngine.SceneManagement;
 
-// สคริปต์นี้ต้องมี FieldOfView, NavMeshAgent และ Animator ติดอยู่ด้วย
 [RequireComponent(typeof(FieldOfView))]
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(AudioSource))]
 public class EnemyPatrol : MonoBehaviour
 {
-    // ------------------------------------------------------------------------
-    // I. FIELDS & PROPERTIES (Protected for Inheritance)
-    // ------------------------------------------------------------------------
+    [Header("Movement Settings")]
+    [SerializeField] protected float moveSpeed = 3.0f;
+    [SerializeField] protected float chaseSpeed = 7.0f;
+    [SerializeField] protected float waitTime = 2.5f;
+    [SerializeField] protected float rotationSpeed = 5.0f;
 
-    [field: Header("Movement Settings")]
-    [Tooltip("ความเร็วในการเดินลาดตระเวน (Base Patrol Speed)")]
-    [field: SerializeField] protected float moveSpeed { get; set; } = 3.0f; 
-    [Tooltip("ความเร็วเมื่อไล่ล่าผู้เล่น (Chase Speed)")]
-    [field: SerializeField] protected float chaseSpeed { get; set; } = 7.0f; 
-    [field: SerializeField] protected float waitTime { get; set; } = 2.5f; 
-    [field: SerializeField] protected float rotationSpeed { get; set; } = 5.0f; 
-
-    [field: Header("Chase Settings")]
-    [Tooltip("ระยะห่างขั้นต่ำที่ศัตรูจะหยุดเดินเมื่อไล่ล่าผู้เล่น")]
-    [field: SerializeField] protected float stoppingDistance { get; set; } = 0.8f; 
-    
-    // 🟡 ลบ Attack Range ออก (เพราะใช้ Trigger แทน)
+    [Header("Chase Settings")]
+    [SerializeField] protected float stoppingDistance = 0.8f;
 
     [Header("Animation & Scene Settings")]
-    [field: SerializeField] protected float walkSpeedThreshold = 3.0f;
-    // 🟡 ลบ attackTriggerName และ durations ออก
-    [field: SerializeField] protected string jumpscareTriggerName = "DoJumpscare";
-    [field: SerializeField] protected float fadeToBlackDuration = 2.0f; 
-    [field: SerializeField] protected string nextSceneName = "JumpScareScene"; 
+    [SerializeField] protected float walkSpeedThreshold = 3.0f;
+    [SerializeField] protected string jumpscareTriggerName = "DoJumpscare";
+    [SerializeField] protected float fadeToBlackDuration = 2.0f;
+    [SerializeField] protected string nextSceneName = "JumpScareScene";
 
     [Header("Search Settings")]
-    [field: SerializeField] protected float searchAngle { get; set; } = 45f;
-    [field: SerializeField] protected float searchRotationSpeed { get; set; } = 100f;
+    [SerializeField] protected float searchAngle = 45f;
+    [SerializeField] protected float searchRotationSpeed = 100f;
 
-    [field: Header("Patrol Points")]
-    [field: SerializeField] protected List<Transform> patrolPoints { get; set; } = new List<Transform>();
+    [Header("Patrol Points")]
+    [SerializeField] protected List<Transform> patrolPoints = new List<Transform>();
 
-    public bool isDetectingPlayer { get; protected set; } 
+    [Header("🔊 Sound Settings")]
+    [SerializeField] private AudioSource sfxSource;         // เอฟเฟกต์ทั่วไป
+    [SerializeField] private AudioSource musicSource;       // เพลงไล่ล่า
+    [SerializeField] private List<AudioClip> footstepClips; // เสียงเดิน
+    [SerializeField] private AudioClip alertClip;           // เจอผู้เล่น
+    [SerializeField] private AudioClip searchClip;          // ค้นหา
+    [SerializeField] private AudioClip jumpscareClip;       // จับผู้เล่น
+    [SerializeField] private AudioClip chaseMusicClip;      // เพลงลุ้นละทึก
+    [SerializeField] private float footstepInterval = 0.5f;
+    [SerializeField] private float chaseMusicVolume = 0.6f;
+    [SerializeField] private float chaseMusicMaxDistance = 20f;
+    [SerializeField] private float chaseMusicMinDistance = 5f;
+
+    public bool isDetectingPlayer { get; protected set; }
 
     protected int currentPointIndex;
     protected FieldOfView fieldOfView;
@@ -52,22 +55,39 @@ public class EnemyPatrol : MonoBehaviour
     protected bool isCheckingLastKnownPosition = false;
     protected Vector3? lastKnownPlayerPosition = null;
     protected Quaternion originalRotation;
-    protected bool isGameOverSequenceActive = false; 
-
-    // ------------------------------------------------------------------------
-    // II. CORE LIFECYCLE & INITIALIZATION
-    // ------------------------------------------------------------------------
+    protected bool isGameOverSequenceActive = false;
+    protected bool isChaseMusicPlaying = false;
+    protected bool wasDetectingLastFrame = false;
+    private float nextFootstepTime = 0f;
+    private Transform player;
 
     protected virtual void Start()
     {
-        Debug.Log("✅ EnemyPatrol เริ่มทำงานแล้ว");
         fieldOfView = GetComponent<FieldOfView>();
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
-        agent.speed = moveSpeed; 
-        agent.stoppingDistance = stoppingDistance; 
-        Time.timeScale = 1.0f; 
+        if (sfxSource == null)
+            sfxSource = GetComponent<AudioSource>();
+
+        if (musicSource == null)
+        {
+            musicSource = gameObject.AddComponent<AudioSource>();
+            musicSource.playOnAwake = false;
+        }
+
+        // ✅ บังคับให้เสียงเป็น 3D (กันลืมตั้งใน Inspector)
+        sfxSource.spatialBlend = 1f;
+        musicSource.spatialBlend = 1f;
+
+        sfxSource.minDistance = 3f;
+        sfxSource.maxDistance = 20f;
+        musicSource.minDistance = chaseMusicMinDistance;
+        musicSource.maxDistance = chaseMusicMaxDistance;
+
+        agent.speed = moveSpeed;
+        agent.stoppingDistance = stoppingDistance;
 
         if (patrolPoints.Count > 0)
         {
@@ -78,27 +98,36 @@ public class EnemyPatrol : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (isGameOverSequenceActive) return; 
-        
+        if (isGameOverSequenceActive) return;
+
         UpdateAnimationSpeed();
 
         bool currentlyDetecting = fieldOfView.VisibleTarget != null;
 
-        if (currentlyDetecting) 
+        if (currentlyDetecting && !wasDetectingLastFrame)
         {
-            isDetectingPlayer = true;
+            PlaySFX(alertClip);
+            PlayChaseMusic();
+        }
+
+        if (!currentlyDetecting && wasDetectingLastFrame)
+        {
+            StopChaseMusic();
+        }
+
+        wasDetectingLastFrame = currentlyDetecting;
+        isDetectingPlayer = currentlyDetecting;
+
+        if (currentlyDetecting)
+        {
             lastKnownPlayerPosition = fieldOfView.VisibleTarget.position;
-            
             Transform target = fieldOfView.VisibleTarget;
+
             if (agent.enabled && target != null)
             {
                 float distanceToTarget = Vector3.Distance(transform.position, target.position);
-
-                // 🟡 1. ลบ Logic attackRange ที่ซ้ำซ้อนออก
-                
-                // 2. Logic ไล่ล่า
                 ChasePlayer();
-                
+
                 if (distanceToTarget <= stoppingDistance)
                 {
                     agent.isStopped = true;
@@ -109,15 +138,10 @@ public class EnemyPatrol : MonoBehaviour
                     agent.isStopped = false;
                     agent.SetDestination(target.position);
                 }
-                else if (agent.isStopped)
-                {
-                    RotateTowardsTarget(target.position);
-                }
             }
         }
         else
         {
-            isDetectingPlayer = false;
             if (lastKnownPlayerPosition.HasValue && !isCheckingLastKnownPosition)
             {
                 StartCoroutine(GoToLastKnownPosition(lastKnownPlayerPosition.Value));
@@ -128,13 +152,59 @@ public class EnemyPatrol : MonoBehaviour
                 PatrolMovement();
             }
         }
+
+        HandleFootsteps();
+        UpdateChaseMusicVolume();
     }
 
-    // ------------------------------------------------------------------------
-    // III. JUMPSCARE LOGIC (Simple Game Over)
-    // ------------------------------------------------------------------------
-    
-    // 🟡 ใช้ OnTriggerEnter เป็นตัวเรียก Jumpscare หลัก
+    // 🎧 ปรับเสียงไล่ล่าตามระยะผู้เล่น
+    protected void UpdateChaseMusicVolume()
+    {
+        if (!isChaseMusicPlaying || musicSource == null || player == null) return;
+
+        float distance = Vector3.Distance(transform.position, player.position);
+        float t = Mathf.InverseLerp(chaseMusicMaxDistance, chaseMusicMinDistance, distance);
+        musicSource.volume = Mathf.Lerp(0f, chaseMusicVolume, t);
+    }
+
+    protected void HandleFootsteps()
+    {
+        if (Time.time < nextFootstepTime) return;
+        if (footstepClips.Count == 0) return;
+        if (!agent.enabled || agent.isStopped) return;
+
+        float velocity = agent.velocity.magnitude;
+        if (velocity > 0.1f)
+        {
+            AudioClip clip = footstepClips[Random.Range(0, footstepClips.Count)];
+            sfxSource.PlayOneShot(clip);
+            nextFootstepTime = Time.time + footstepInterval * Mathf.Lerp(1.0f, 0.5f, velocity / chaseSpeed);
+        }
+    }
+
+    protected void PlayChaseMusic()
+    {
+        if (musicSource == null || chaseMusicClip == null || isChaseMusicPlaying) return;
+        musicSource.clip = chaseMusicClip;
+        musicSource.volume = 0f; // เริ่มเบา แล้วให้ UpdateChaseMusicVolume ค่อย ๆ ปรับ
+        musicSource.loop = true;
+        musicSource.Play();
+        isChaseMusicPlaying = true;
+    }
+
+    protected void StopChaseMusic()
+    {
+        if (musicSource == null) return;
+        musicSource.Stop();
+        isChaseMusicPlaying = false;
+    }
+
+    protected void PlaySFX(AudioClip clip)
+    {
+        if (clip == null || sfxSource == null) return;
+        sfxSource.PlayOneShot(clip);
+    }
+
     protected void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player") && !isGameOverSequenceActive)
@@ -150,59 +220,45 @@ public class EnemyPatrol : MonoBehaviour
 
     protected void HandleJumpscare()
     {
-        if (isGameOverSequenceActive) return; 
-
-        isGameOverSequenceActive = true; 
+        if (isGameOverSequenceActive) return;
+        isGameOverSequenceActive = true;
         StopAllCoroutines();
+        StopChaseMusic();
+        PlaySFX(jumpscareClip);
 
-        // 1. หยุดการเคลื่อนไหวของศัตรู
         if (agent != null && agent.enabled)
         {
             agent.isStopped = true;
             agent.velocity = Vector3.zero;
         }
 
-        // 2. ล็อกอนิเมชัน และเริ่ม Sequence
         animator.SetFloat("Speed", 0f);
-        animator.SetBool("IsHit", true); // ล็อก AI
-
-        // 3. เริ่ม Coroutine Game Over
+        animator.SetBool("IsHit", true);
         StartCoroutine(GameOverSequence());
     }
-    
+
     protected IEnumerator GameOverSequence()
     {
-        // 1. ✅ บังคับเล่นอนิเมชัน Jumpscare (ถ้ามี)
         if (animator != null)
         {
-            animator.Play(jumpscareTriggerName); 
+            animator.Play(jumpscareTriggerName);
         }
 
-        // 2. รอการแสดงผล Jumpscare และหน่วงเวลา
-        // (ในทางปฏิบัติคือการทำหน้าจอ Fade Out/ดำ 2 วินาที)
-        Debug.Log("หน้าจอดำ 2 วินาที และเตรียมเปลี่ยน Scene...");
-        yield return new WaitForSeconds(fadeToBlackDuration); // 2 วินาที
+        yield return new WaitForSeconds(fadeToBlackDuration);
 
-        // 3. ✅ เปลี่ยน Scene
         if (!string.IsNullOrEmpty(nextSceneName))
         {
-            Debug.Log("▶ โหลดฉากถัดไป: " + nextSceneName);
             SceneManager.LoadScene(nextSceneName);
         }
         else
         {
-            Debug.LogError("Next Scene Name is not set. Cannot load next scene.");
+            Debug.LogError("Next Scene Name is not set.");
         }
     }
 
-    // ------------------------------------------------------------------------
-    // IV. UTILITY & AI BEHAVIOR
-    // ------------------------------------------------------------------------
-    
     protected void UpdateAnimationSpeed()
     {
         if (animator == null || agent == null) return;
-        
         float currentVelocityMagnitude = (agent.enabled && !agent.isStopped) ? agent.velocity.magnitude : 0f;
         float speedValue;
 
@@ -210,23 +266,10 @@ public class EnemyPatrol : MonoBehaviour
             speedValue = 0f;
         else if (currentVelocityMagnitude <= walkSpeedThreshold)
             speedValue = Mathf.InverseLerp(0f, walkSpeedThreshold, currentVelocityMagnitude);
-        else 
-            speedValue = 1.0f + ((currentVelocityMagnitude - walkSpeedThreshold) * 0.5f); 
+        else
+            speedValue = 1.0f + ((currentVelocityMagnitude - walkSpeedThreshold) * 0.5f);
 
         animator.SetFloat("Speed", speedValue, 0.1f, Time.deltaTime);
-    }
-
-    protected void StopAllAISequences()
-    {
-        StopAllCoroutines();
-        isSearching = false;
-        isCheckingLastKnownPosition = false;
-
-        if (agent != null && agent.enabled)
-            agent.isStopped = true;
-        
-        if (animator != null)
-            animator.SetFloat("Speed", 0f);
     }
 
     protected virtual void ChasePlayer()
@@ -236,16 +279,16 @@ public class EnemyPatrol : MonoBehaviour
         isCheckingLastKnownPosition = false;
 
         Transform target = fieldOfView.VisibleTarget;
-        agent.speed = chaseSpeed;    
-        if (agent.isStopped) 
+        agent.speed = chaseSpeed;
+        if (agent.isStopped)
             agent.isStopped = false;
 
         agent.SetDestination(target.position);
     }
-    
+
     protected IEnumerator GoToLastKnownPosition(Vector3 targetPosition)
     {
-        // ... (Logic GoToLastKnownPosition omitted for brevity)
+        PlaySFX(searchClip);
         agent.stoppingDistance = 0.05f;
         agent.isStopped = false;
         agent.SetDestination(targetPosition);
@@ -265,25 +308,25 @@ public class EnemyPatrol : MonoBehaviour
         lastKnownPlayerPosition = null;
         isCheckingLastKnownPosition = false;
         GoToNextPoint();
-        agent.speed = moveSpeed;    
+        agent.speed = moveSpeed;
         agent.isStopped = false;
         agent.SetDestination(patrolPoints[currentPointIndex].position);
     }
-    
+
     protected IEnumerator SearchRoutine()
     {
-        // ... (Logic SearchRoutine omitted for brevity)
+        PlaySFX(searchClip);
         isSearching = true;
         originalRotation = transform.rotation;
-        agent.isStopped = true;    
+        agent.isStopped = true;
 
         Quaternion leftRot = originalRotation * Quaternion.Euler(0, -searchAngle, 0);
         Quaternion rightRot = originalRotation * Quaternion.Euler(0, searchAngle, 0);
 
         yield return StartCoroutine(RotateToTarget(leftRot, searchRotationSpeed));
-        yield return new WaitForSeconds(waitTime / 2); 
+        yield return new WaitForSeconds(waitTime / 2);
         yield return StartCoroutine(RotateToTarget(rightRot, searchRotationSpeed));
-        yield return new WaitForSeconds(waitTime / 2); 
+        yield return new WaitForSeconds(waitTime / 2);
         yield return StartCoroutine(RotateToTarget(originalRotation, searchRotationSpeed));
 
         isSearching = false;
@@ -291,28 +334,26 @@ public class EnemyPatrol : MonoBehaviour
 
     protected virtual void PatrolMovement()
     {
-        // ... (Logic PatrolMovement omitted for brevity)
         if (patrolPoints.Count == 0) return;
-
-        agent.speed = moveSpeed;    
-        agent.stoppingDistance = 0.05f;    
+        agent.speed = moveSpeed;
+        agent.stoppingDistance = 0.05f;
 
         if (!agent.pathPending && agent.remainingDistance < agent.stoppingDistance && !isSearching)
         {
             if (!agent.isStopped)
-                agent.isStopped = true;    
+                agent.isStopped = true;
 
             StartCoroutine(WaitAndGoNextPoint());
         }
         else if (!agent.isStopped)
         {
-             agent.SetDestination(patrolPoints[currentPointIndex].position);
+            agent.SetDestination(patrolPoints[currentPointIndex].position);
         }
     }
 
     protected IEnumerator WaitAndGoNextPoint()
     {
-        yield return StartCoroutine(SearchRoutine()); 
+        yield return StartCoroutine(SearchRoutine());
         GoToNextPoint();
         agent.isStopped = false;
         agent.SetDestination(patrolPoints[currentPointIndex].position);

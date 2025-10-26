@@ -1508,7 +1508,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetSceneName: map 2
-  delayTime: 31
+  delayTime: 30.2
 --- !u!1 &569496129
 GameObject:
   m_ObjectHideFlags: 0
@@ -1683,7 +1683,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -20.615}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -59, y: 149}
+  m_AnchoredPosition: {x: -137, y: 314}
   m_SizeDelta: {x: 1081.8574, y: 239.3596}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &623055928
@@ -1733,13 +1733,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 400
-  m_fontSizeBase: 400
+  m_fontSize: 600
+  m_fontSizeBase: 600
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 3
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -1771,7 +1771,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: -400.6145, w: 178.29083}
+  m_margin: {x: -285.57867, y: 0, z: -860.6906, w: 178.29083}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -1799,7 +1799,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enableTimedBehavior: 1
   preventFadeOut: 1
-  initialDelay: 20
+  initialDelay: 26
   visibleDuration: 5
   fadeDuration: 1
 --- !u!225 &623055931
@@ -4362,7 +4362,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1752078390
 RectTransform:
   m_ObjectHideFlags: 0
