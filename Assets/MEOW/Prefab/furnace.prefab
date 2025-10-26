@@ -127,7 +127,7 @@ MonoBehaviour:
   requiredMetal: 5
   interactDistance: 3
   interactKey: 102
-  keyPrefab: {fileID: 0}
+  keyPrefab: {fileID: 1456762465985215244, guid: a70ebe6d566b986458e749c177710c99, type: 3}
 --- !u!1 &7456546661061915139
 GameObject:
   m_ObjectHideFlags: 0
