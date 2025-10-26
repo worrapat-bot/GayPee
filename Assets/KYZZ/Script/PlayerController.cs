@@ -311,13 +311,20 @@ public class PlayerController : MonoBehaviour
 
     void OnGUI()
     {
-        // Stamina Bar
+        if (dialog) return;
+
+        // สร้าง style สำหรับ GUI
+        GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
+        labelStyle.alignment = TextAnchor.MiddleCenter;
+        labelStyle.richText = true;
+
+        // ✅ Stamina Bar
         GUI.color = staminaBarBg;
         GUI.Box(new Rect(10, 10, 200, 20), "");
         GUI.color = staminaBarColor;
         GUI.Box(new Rect(10, 10, 200 * GetStamina(), 20), "");
 
-        // Throw Power Bar
+        // ✅ Throw Power Bar
         if (isChargingThrow)
         {
             float chargeTime = Time.time - throwChargeStart;
@@ -330,11 +337,14 @@ public class PlayerController : MonoBehaviour
             GUI.Box(new Rect(10, 40, 200 * chargePercent, 20), "");
         }
 
-        // Crosshair (.)
+        // ✅ Reset สีหลังวาด UI
         GUI.color = Color.white;
-        GUI.Label(
-            new Rect((Screen.width / 2) - 5, (Screen.height / 2) - 8, 20, 20),
-            "<size=25><b>.</b></size>"
-        );
+
+        // ✅ Crosshair (. หรือ + แล้วแต่ชอบ)
+        float crossSize = 20f;
+        float x = (Screen.width - crossSize) / 2;
+        float y = (Screen.height - crossSize) / 2;
+        GUI.Label(new Rect(x, y, crossSize, crossSize), "<size=25><b>.</b></size>", labelStyle);
     }
+
 }
