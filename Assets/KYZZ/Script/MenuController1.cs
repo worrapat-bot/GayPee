@@ -120,15 +120,13 @@ public class MenuController : MonoBehaviour
     {
         PlayClick();
 
-        // ✅ เซฟเกม
-        QuickSaveSystem.SaveGame();
+        // ✅ ใช้ระบบใหม่
+        GameSaveSystem.SaveGame();
 
-        // ✅ Save เสร็จแล้ว กลับไปหน้า Pause Menu
         if (savePanel) savePanel.SetActive(false);
         if (pausePanel) pausePanel.SetActive(true);
 
-        // ✅ บอก MainMenu ให้อัพเดทปุ่ม Continue (ถ้ากลับไปเมนูแล้ว)
-        Debug.Log("💾 Game saved successfully!");
+        Debug.Log("💾 บันทึกเกมเรียบร้อยแล้ว!");
     }
 
     void OpenSavePanel()
@@ -152,20 +150,16 @@ public class MenuController : MonoBehaviour
     {
         PlayClick();
 
-        // ✅ ปลดล็อกเกมก่อนเปลี่ยน scene
+        GameSaveSystem.SaveGame(); // ✅ เซฟก่อนออก
         Time.timeScale = 1f;
         AudioListener.pause = false;
         PlayerController.dialog = false;
 
         if (!string.IsNullOrEmpty(menuSceneName))
-        {
             SceneManager.LoadScene(menuSceneName);
-        }
-        else
-        {
-            Debug.LogWarning("⚠️ menuSceneName ยังไม่ได้ตั้งค่าใน Inspector!");
-        }
     }
+
+
 
     void LeaveWithoutSave()
     {

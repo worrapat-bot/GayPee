@@ -130,7 +130,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toggleKey: 102
   itemID: Flashlight
-  auraIntensity: 20
+  auraIntensity: 50
   auraRange: 20
   auraColor: {r: 1, g: 0.95, b: 0.8, a: 1}
   spotAngle: 60
@@ -138,7 +138,7 @@ MonoBehaviour:
   flickerAmount: 0.102
   useBattery: 0
   maxBatteryLife: 5000
-  batteryDrainRate: 1
+  batteryDrainRate: 0.3
   lowBatteryThreshold: 20
   showFlashlightModel: 1
   flashlightPositionOffset: {x: 0.3, y: -0.2, z: 0.5}
