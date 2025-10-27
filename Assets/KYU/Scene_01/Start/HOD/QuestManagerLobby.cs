@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 
-public class QuestManager : MonoBehaviour
+public class QuestManagerLobby : MonoBehaviour
 {
     [Header("Quest Item Pool")]
     [Tooltip("ไอเท็มทั้งหมดที่สามารถถูกสุ่มได้")]
