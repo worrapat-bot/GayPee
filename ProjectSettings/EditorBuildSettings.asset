@@ -5,31 +5,31 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/KYU/Scene_01/_StartGame.unity
     guid: a4a49985f58511b478d1cec9c6c60a83
-  - enabled: 1
+  - enabled: 0
     path: Assets/KYU/Scene_01/JumpScareScene.unity
     guid: 1d4dbcc59f01c604cba9f2136bc6044f
-  - enabled: 1
+  - enabled: 0
     path: Assets/POSH/map 2.unity
     guid: af394048ebe69ed448c210fd7b029cf6
-  - enabled: 1
+  - enabled: 0
     path: Assets/POSH/Lap.unity
     guid: 28159f69353f59b49af3f47e04655fa0
-  - enabled: 1
+  - enabled: 0
     path: Assets/POSH/lose.unity
     guid: 37e5eafceb86eab4da3722add6b2a55b
-  - enabled: 1
+  - enabled: 0
     path: Assets/KYZZ/Protection_suite.unity
     guid: 4159e3aad6ef2354faea145637a6c6fd
-  - enabled: 1
+  - enabled: 0
     path: Assets/KYZZ/LapMenu.unity
     guid: 30088c47b1f8a2d4a9c3645ba6f98f96
-  - enabled: 1
+  - enabled: 0
     path: Assets/POSH/lol.unity
     guid: 84afb36c994a6794f90c6a24a0c2cd0c
   m_configObjects:
