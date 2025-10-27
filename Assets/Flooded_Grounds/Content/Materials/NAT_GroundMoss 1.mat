@@ -72,6 +72,8 @@ Material:
     m_Floats:
     - _DetailNormalMapScale: 0.4
     - _Smoothness: 0.04
-    m_Colors: []
+    m_Colors:
+    - _BaseColor: {r: 0.48235294, g: 0.41960785, b: 0.47432363, a: 0.9019608}
+    - _Color: {r: 0.4823529, g: 0.41960782, b: 0.47432357, a: 0.9019608}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

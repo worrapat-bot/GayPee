@@ -1374,6 +1374,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8766693707526683302, guid: f996c4e684b26d544bfb284752020062, type: 3}
+      propertyPath: weight
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8766693707526683302, guid: f996c4e684b26d544bfb284752020062, type: 3}
       propertyPath: priority
       value: 20
       objectReference: {fileID: 0}
