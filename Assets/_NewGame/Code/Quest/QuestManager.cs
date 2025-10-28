@@ -1,27 +1,34 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 public class QuestManager : MonoBehaviour
 {
-    public static QuestManager Instance;
-    private Dictionary<string, HashSet<string>> questProgress = new Dictionary<string, HashSet<string>>();
+    public static QuestManager Instance { get; private set; }
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
-    public void UpdateQuestProgress(string questID, string taskID)
+    public void NotifyFocusQuestItem(string questID, string itemName)
     {
-        if (!questProgress.ContainsKey(questID))
-            questProgress[questID] = new HashSet<string>();
-
-        questProgress[questID].Add(taskID);
-        Debug.Log($"[Quest] {questID}: ทำ {taskID} เสร็จแล้ว");
+        Debug.Log($"[Quest] Focused on item for quest {questID}: {itemName}");
     }
 
-    public bool IsTaskCompleted(string questID, string taskID)
+    public void NotifyItemCollected(string questID, string itemName)
     {
-        return questProgress.ContainsKey(questID) && questProgress[questID].Contains(taskID);
+        Debug.Log($"[Quest] Collected {itemName} for quest {questID}");
+    }
+
+    // ✅ เพิ่มระบบนับความคืบหน้า Quest
+    public void UpdateQuestProgress(string questID, int amount = 1)
+    {
+        Debug.Log($"[Quest] Progress updated for quest {questID} (+{amount})");
+        // ภายหลังสามารถใส่ระบบเก็บ progress จริงได้
     }
 }

@@ -776,7 +776,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   itemName: Item
-  holdType: 0
+  interactDistance: 3
+  weight: 1
+  isQuestItem: 0
+  questID: 
+  highlightRenderer: {fileID: 0}
+  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  canBeHeld: 1
+  usePhysicsJoint: 0
+  holdPointOverride: {fileID: 0}
 --- !u!135 &1198732016
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -860,7 +868,7 @@ Transform:
   m_GameObject: {fileID: 1198732014}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.05, y: 0.897, z: -9.622}
+  m_LocalPosition: {x: -0.05, y: 0.897, z: -10.671}
   m_LocalScale: {x: 0.39012, y: 0.39012, z: 0.39012}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1036,7 +1044,7 @@ MonoBehaviour:
   rotationSpeed: 5
   rotationInertia: 5
   rotateX: 0
-  rotateY: 0
+  rotateY: 1
   rotateZ: 0
   limitRotation: 0
   minRotation: {x: -80, y: -180, z: -45}
@@ -1045,7 +1053,7 @@ MonoBehaviour:
   moveSpeed: 0.04
   moveInertia: 5
   moveX: 0
-  moveY: 1
+  moveY: 0
   moveZ: 0
   limitMovement: 0
   minPosition: {x: -5, y: 0, z: -5}
@@ -1059,7 +1067,7 @@ Transform:
   m_GameObject: {fileID: 1494517296}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.04980183, y: 0.585, z: -8.739907}
+  m_LocalPosition: {x: -0.04980183, y: -0.199, z: -8.739907}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1185,7 +1193,7 @@ Transform:
   m_GameObject: {fileID: 2074451889}
   serializedVersion: 2
   m_LocalRotation: {x: 0.098463, y: -0, z: -0, w: 0.99514073}
-  m_LocalPosition: {x: 0, y: 1.43, z: -10.551}
+  m_LocalPosition: {x: 0, y: 1.364, z: -10.219}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1266,6 +1274,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   leftHandAnchor: {fileID: 517961615}
   rightHandAnchor: {fileID: 54095290}
+  playerCam: {fileID: 0}
+  interactRange: 3
+  interactLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  grabKey: 101
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

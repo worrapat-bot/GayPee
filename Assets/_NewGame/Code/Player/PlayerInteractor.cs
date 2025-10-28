@@ -39,7 +39,9 @@ public class PlayerInteractor : MonoBehaviour
                 {
                     ClearFocus();
                     focusedItem = item;
-                    focusedItem.OnFocus(true);
+                    
+                    // ✅ แก้ไข (บรรทัด 42): เรียก OnFocus() แบบไม่มี Argument
+                    focusedItem.OnFocus(); 
                 }
                 return;
             }
@@ -52,7 +54,8 @@ public class PlayerInteractor : MonoBehaviour
     {
         if (focusedItem != null)
         {
-            focusedItem.OnFocus(false);
+            // ✅ แก้ไข (บรรทัด 55): เรียก OnUnfocus() แทน OnFocus(false)
+            focusedItem.OnUnfocus(); 
             focusedItem = null;
         }
     }

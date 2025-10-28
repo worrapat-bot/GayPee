@@ -2,77 +2,86 @@ using UnityEngine;
 
 public class HandManager : MonoBehaviour
 {
+    [Header("Hand Anchors")]
     public Transform leftHandAnchor;
     public Transform rightHandAnchor;
-    public float maxCarryWeightPerHand = 5f;
+
+    [Header("Player Settings")]
+    public Camera playerCam;
+    public float interactRange = 3f;
+    public LayerMask interactLayer;
+    public KeyCode grabKey = KeyCode.E;
 
     private InteractableItem leftHandItem;
     private InteractableItem rightHandItem;
 
-    public bool IsLeftHandFree => leftHandItem == null;
-    public bool IsRightHandFree => rightHandItem == null;
-
-    public bool CanGrab(InteractableItem item)
+    void Update()
     {
-        // ตรวจสอบน้ำหนัก
-        if (item.holdType == ItemHoldType.OneHand && item.weight > maxCarryWeightPerHand)
-            return false;
-
-        if (item.holdType == ItemHoldType.TwoHands && item.weight > maxCarryWeightPerHand * 2)
-            return false;
-
-        // ตรวจสอบว่ามือว่างไหม
-        if (item.holdType == ItemHoldType.OneHand)
-            return IsLeftHandFree || IsRightHandFree;
-        else
-            return IsLeftHandFree && IsRightHandFree;
+        if (Input.GetKeyDown(grabKey))
+        {
+            TryGrabOrRelease();
+        }
     }
 
-    public void GrabItem(InteractableItem item)
+    private void TryGrabOrRelease()
     {
-        if (!CanGrab(item))
+        if (rightHandItem != null)
         {
-            Debug.Log("ไม่สามารถถือได้: " + item.itemName);
+            rightHandItem.Release();
+            rightHandItem = null;
             return;
         }
 
-        if (item.holdType == ItemHoldType.OneHand)
+        if (Physics.Raycast(playerCam.transform.position, playerCam.transform.forward, out RaycastHit hit, interactRange, interactLayer))
         {
-            if (IsRightHandFree)
+            InteractableItem item = hit.collider.GetComponentInParent<InteractableItem>();
+            
+            // ✅ แก้ไข CS1955: IsGrabbed ถูกใช้เป็น Property (ไม่มีวงเล็บ ())
+            if (item != null && !item.IsGrabbed)
             {
-                rightHandItem = item;
-                item.OnGrab(rightHandAnchor);
-            }
-            else
-            {
-                leftHandItem = item;
-                item.OnGrab(leftHandAnchor);
+                GrabItem(item);
             }
         }
-        else
-        {
-            leftHandItem = rightHandItem = item;
-            item.OnGrab(rightHandAnchor);
-        }
+    }
 
-        // ถ้ามี QuestItem อยู่ในนี้
-        var questItem = item.GetComponent<QuestItem>();
-        if (questItem != null)
-            questItem.OnPickedUp();
+    // 🎯 เรียกจาก PlayerInteractor ได้เลย
+    public void GrabItem(InteractableItem item)
+    {
+        if (item == null) return;
+
+        // ✅ แก้ไข CS1501: ลบ Argument ที่สอง (item.usePhysicsJoint) ออก
+        // สมมติว่า TryGrab ถูกออกแบบมารับแค่ Transform เดียว
+        bool success = item.TryGrab(rightHandAnchor); 
+        
+        if (success)
+        {
+            rightHandItem = item;
+            Debug.Log($"Grabbed {item.name}");
+        }
     }
 
     public void ReleaseAll()
     {
-        if (leftHandItem)
+        if (leftHandItem != null)
         {
-            leftHandItem.OnRelease();
+            leftHandItem.Release();
             leftHandItem = null;
         }
 
-        if (rightHandItem)
+        if (rightHandItem != null)
         {
-            rightHandItem.OnRelease();
+            rightHandItem.Release();
             rightHandItem = null;
         }
+
+        Debug.Log("Released all items.");
+    }
+
+    public bool HasFreeHand(bool requiresTwoHands = false)
+    {
+        if (requiresTwoHands)
+            return leftHandItem == null && rightHandItem == null;
+
+        return leftHandItem == null || rightHandItem == null;
     }
 }
