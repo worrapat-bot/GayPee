@@ -38,12 +38,22 @@ public class DragMoveRotatePro : MonoBehaviour
     private Vector3 moveVelocity;
     private Vector3 currentRotation;
     private bool isDragging = false;
-    private bool isPointerOver = false; // ตรวจว่าคลิกโดน object หรือไม่
+    private bool isPointerOver = false; 
     private Camera mainCam;
 
     void Start()
     {
         mainCam = Camera.main;
+        
+        // ✅ แก้ไข: เพิ่มการตรวจสอบ (Null Check) ที่นี่
+        if (mainCam == null)
+        {
+            Debug.LogError("DragMoveRotatePro: ไม่พบ Camera ที่ Tag 'MainCamera'! กรุณาตั้ง Tag ให้กล้องหลักของคุณ", this.gameObject);
+            // ปิดการทำงานของ Script นี้ไปเลยเพื่อป้องกัน Error เพิ่ม
+            this.enabled = false; 
+            return;
+        }
+        
         currentRotation = transform.rotation.eulerAngles;
     }
 
@@ -126,8 +136,13 @@ public class DragMoveRotatePro : MonoBehaviour
     // -----------------------------------------------------------
     bool CheckPointerOverObject(Vector3? position = null)
     {
+        // ✅ แก้ไข: เพิ่มการตรวจสอบ (Null Check) อีกชั้น
+        if (mainCam == null) return false; 
+        
         Vector3 inputPos = position ?? Input.mousePosition;
-        Ray ray = mainCam.ScreenPointToRay(inputPos);
+        
+        // บรรทัดนี้ (เดิมคือ 129) คือจุดที่ทำให้เกิด NullReference
+        Ray ray = mainCam.ScreenPointToRay(inputPos); 
         RaycastHit hit;
 
         if (Physics.Raycast(ray, out hit))
